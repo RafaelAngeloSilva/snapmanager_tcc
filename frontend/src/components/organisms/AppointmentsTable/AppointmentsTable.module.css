@@ -1,0 +1,30 @@
+.titleCell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.title {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.sessionType {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.person {
+  color: var(--color-text-secondary);
+  font-size: 0.88rem;
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.3rem;
+}

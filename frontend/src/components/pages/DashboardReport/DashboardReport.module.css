@@ -1,0 +1,259 @@
+.loadingBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 4rem;
+  color: var(--color-text-secondary);
+}
+
+.page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.actionsBar {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  max-width: 860px;
+  margin-bottom: 1rem;
+}
+
+/* Na tela, o relatório aparece como um "documento" próprio — cartão branco
+   com borda/sombra — para não parecer um recorte do Dashboard. Na
+   impressão, essas bordas/sombra somem (regra @media print abaixo) e o
+   documento ocupa a folha inteira. */
+.report {
+  width: 100%;
+  max-width: 860px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 2.5rem;
+}
+
+.reportHeader {
+  margin-bottom: 1.75rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.brandMark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.9rem;
+}
+
+.brandIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-accent);
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+}
+
+.brandWordmark {
+  font-family: var(--font-heading);
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+
+.brandDot {
+  display: inline-block;
+  width: 4px;
+  height: 4px;
+  margin-left: 3px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  vertical-align: baseline;
+}
+
+.reportTitle {
+  font-size: 1.6rem;
+  margin-bottom: 1.1rem;
+}
+
+.metaRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.75rem;
+}
+
+.metaLabel {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-text-muted);
+  margin-bottom: 0.15rem;
+}
+
+.metaValue {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.section {
+  margin-bottom: 2rem;
+  break-inside: avoid;
+}
+
+.section:last-of-type {
+  margin-bottom: 0;
+}
+
+.sectionTitle {
+  font-size: 1.02rem;
+  margin-bottom: 0.9rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.9rem;
+}
+
+.statTile {
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+}
+
+.statValue {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.statLabel {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.emptyText {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+}
+
+.alertsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.galleriesGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.9rem;
+  margin: 0;
+}
+
+.galleryStat {
+  padding: 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  text-align: center;
+}
+
+.galleryStat dt {
+  font-size: 0.76rem;
+  color: var(--color-text-secondary);
+}
+
+.galleryStat dd {
+  margin: 0.25rem 0 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.reportFooter {
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.reportFooter p {
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .galleriesGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .report {
+    padding: 1.5rem;
+  }
+}
+
+/* Impressão: tema claro já é forçado globalmente (global.css). Aqui só
+   removemos o "cartão" (borda/sombra/max-width) pra ocupar a folha inteira,
+   escondemos o botão, e evitamos que uma seção seja cortada no meio entre
+   páginas — cada bloco (cabeçalho, gráfico, tabela) tenta ficar inteiro na
+   mesma página. */
+@media print {
+  .actionsBar {
+    display: none;
+  }
+
+  .page {
+    align-items: stretch;
+  }
+
+  .report {
+    max-width: none;
+    padding: 0;
+    border: none;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .reportHeader {
+    break-after: avoid;
+  }
+}
+
+@page {
+  size: A4;
+  margin: 14mm;
+}

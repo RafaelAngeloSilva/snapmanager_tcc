@@ -1,0 +1,179 @@
+/* Camada sempre escura, independente do tema claro/escuro do resto do
+   sistema — é a convenção já usada no overlay do Modal (atoms/Modal) e no
+   hero da própria galeria pública (fundo sempre escuro de propósito). */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(8, 9, 14, 0.94);
+  padding: 3.5rem 1rem;
+  animation: fadeIn var(--transition-base);
+}
+
+.stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  max-width: min(92vw, 1100px);
+  animation: scaleIn var(--transition-slow);
+}
+
+.image {
+  max-width: min(92vw, 1100px);
+  max-height: 74vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.caption {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  color: #f1efe9;
+}
+
+.counter {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(241, 239, 233, 0.75);
+  font-variant-numeric: tabular-nums;
+}
+
+.statusLabel {
+  font-size: 0.82rem;
+  color: rgba(241, 239, 233, 0.75);
+}
+
+.selectButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1.1rem;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f1efe9;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.selectButton:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.selectButton.selected {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.closeButton {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #f1efe9;
+  font-size: 1.1rem;
+  transition: background-color var(--transition-fast);
+}
+
+.closeButton:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.navButton {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  color: #f1efe9;
+  transition: background-color var(--transition-fast);
+}
+
+.navButton:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.navPrev {
+  left: 1rem;
+}
+
+.navNext {
+  right: 1rem;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 640px) {
+  .overlay {
+    padding: 3rem 0.5rem;
+  }
+
+  .navButton {
+    width: 36px;
+    height: 36px;
+  }
+
+  .navPrev {
+    left: 0.35rem;
+  }
+
+  .navNext {
+    right: 0.35rem;
+  }
+
+  .closeButton {
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 34px;
+    height: 34px;
+  }
+
+  .image {
+    max-height: 62vh;
+  }
+}

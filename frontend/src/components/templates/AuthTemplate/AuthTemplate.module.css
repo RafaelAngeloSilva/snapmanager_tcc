@@ -1,0 +1,284 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+}
+
+/* ---------- Painel hero (esquerda) ---------- */
+
+.hero {
+  position: relative;
+  flex: 1 1 48%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  padding: 4rem;
+  background: radial-gradient(circle at 15% 15%, #232a3f 0%, var(--color-sidebar-bg) 45%, #0a0b10 100%);
+  color: var(--color-text-on-dark);
+}
+
+/* Vídeo de fundo (reel de fotos do estúdio) + véu escuro por cima, pro
+   texto continuar legível independente do quadro que estiver passando —
+   alguns quadros do vídeo são bem claros. O gradiente radial de .hero
+   continua servindo de cor de fallback antes do vídeo carregar. */
+.heroVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.heroScrim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background:
+    linear-gradient(180deg, rgba(8, 9, 14, 0.86) 0%, rgba(8, 9, 14, 0.62) 42%, rgba(8, 9, 14, 0.9) 100%),
+    radial-gradient(circle at 50% 45%, transparent 0%, rgba(8, 9, 14, 0.4) 100%);
+}
+
+/* Cantos de enquadramento, como as marcas de um visor de câmera. */
+.viewfinder {
+  position: absolute;
+  inset: 2.25rem;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.corner {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border-color: rgba(241, 239, 233, 0.28);
+  border-style: solid;
+  border-width: 0;
+}
+
+.cornerTl {
+  top: 0;
+  left: 0;
+  border-top-width: 2px;
+  border-left-width: 2px;
+  border-top-left-radius: 6px;
+}
+
+.cornerTr {
+  top: 0;
+  right: 0;
+  border-top-width: 2px;
+  border-right-width: 2px;
+  border-top-right-radius: 6px;
+}
+
+.cornerBl {
+  bottom: 0;
+  left: 0;
+  border-bottom-width: 2px;
+  border-left-width: 2px;
+  border-bottom-left-radius: 6px;
+}
+
+.cornerBr {
+  bottom: 0;
+  right: 0;
+  border-bottom-width: 2px;
+  border-right-width: 2px;
+  border-bottom-right-radius: 6px;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 2;
+  max-width: 440px;
+}
+
+.heroBrand {
+  display: flex;
+  align-items: center;
+  margin-bottom: 3rem;
+}
+
+.heroLogo {
+  height: 56px;
+  width: auto;
+  filter: drop-shadow(0 2px 10px rgba(0, 0, 0, 0.45));
+}
+
+.heroTagline {
+  font-family: var(--font-serif);
+  font-size: 2.15rem;
+  line-height: 1.28;
+  font-weight: 400;
+  margin: 0 0 1.1rem;
+  letter-spacing: -0.01em;
+}
+
+.heroSubtext {
+  margin: 0 0 2.25rem;
+  color: var(--color-text-on-dark-muted);
+  font-size: 0.96rem;
+  line-height: 1.6;
+  max-width: 38ch;
+}
+
+.heroList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.heroList li {
+  position: relative;
+  padding-left: 1.6rem;
+  font-size: 0.88rem;
+  color: var(--color-text-on-dark);
+  opacity: 0.92;
+}
+
+.heroList li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.35rem;
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  background: var(--color-accent);
+}
+
+/* ---------- Painel do formulário (direita) ---------- */
+
+.formSide {
+  position: relative;
+  flex: 1 1 52%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 88% 6%, var(--color-primary-soft) 0%, transparent 45%),
+    radial-gradient(circle at 4% 96%, var(--color-accent-soft) 0%, transparent 42%),
+    var(--color-bg);
+}
+
+/* Textura discreta (pontilhado), esmaecida perto do centro pra não competir
+   com o card do formulário. Mesma ideia do "grain" do hero da galeria
+   pública, só que com uma cor que se adapta ao tema (aqui o fundo não é
+   sempre escuro como lá). */
+.formGrid {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image: radial-gradient(circle, var(--color-border-strong) 1px, transparent 1.5px);
+  background-size: 26px 26px;
+  opacity: 0.5;
+  mask-image: radial-gradient(circle at 50% 50%, transparent 20%, black 70%);
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, transparent 20%, black 70%);
+  pointer-events: none;
+}
+
+/* Anéis concêntricos lembrando a lente/diafragma de uma câmera — só o
+   contorno, sem preenchimento, bem discretos. */
+.lensRing {
+  position: absolute;
+  z-index: 0;
+  border-radius: 50%;
+  border: 1px solid var(--color-border-strong);
+  pointer-events: none;
+}
+
+.lensRing::before {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+}
+
+.lensRingTop {
+  width: 340px;
+  height: 340px;
+  top: -110px;
+  right: -90px;
+}
+
+.lensRingTop::before {
+  inset: 32px;
+}
+
+.lensRingBottom {
+  width: 230px;
+  height: 230px;
+  bottom: -80px;
+  left: -60px;
+}
+
+.lensRingBottom::before {
+  inset: 22px;
+}
+
+.formWrap {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 400px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  padding: 2.75rem 2.5rem;
+  overflow: hidden;
+}
+
+/* Acabamento no topo do card: uma faixa cheia (não um traço solto),
+   acompanhando exatamente a curva dos cantos arredondados do card graças ao
+   overflow: hidden acima — por isso lê como um detalhe de design intencional
+   em vez de uma linha cortada. */
+.formWrap::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--color-primary), var(--color-accent));
+}
+
+.footer {
+  position: relative;
+  z-index: 1;
+  margin-top: 1.75rem;
+  text-align: center;
+  font-size: 0.78rem;
+  letter-spacing: 0.01em;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 480px) {
+  .lensRingTop,
+  .lensRingBottom {
+    display: none;
+  }
+}
+
+@media (max-width: 880px) {
+  .hero {
+    display: none;
+  }
+
+  .formSide {
+    flex: 1 1 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .formWrap {
+    padding: 1.75rem;
+  }
+}

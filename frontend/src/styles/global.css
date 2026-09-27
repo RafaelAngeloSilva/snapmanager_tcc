@@ -1,0 +1,260 @@
+/* Fontes auto-hospedadas via @fontsource (sem depender de link externo do
+   Google Fonts em tempo de execução — nada de requisição de rede extra nem
+   FOUT visível entre fontes). Pesos escolhidos a dedo: 400/500 pro corpo do
+   texto, 600/700/800 pra títulos e ênfase. */
+@import '@fontsource/manrope/400.css';
+@import '@fontsource/manrope/500.css';
+@import '@fontsource/manrope/600.css';
+@import '@fontsource/manrope/700.css';
+@import '@fontsource/plus-jakarta-sans/600.css';
+@import '@fontsource/plus-jakarta-sans/700.css';
+@import '@fontsource/plus-jakarta-sans/800.css';
+
+:root {
+  /* Superfícies e fundo — leve toque quente, menos "clínico" */
+  --color-bg: #f6f5f3;
+  --color-surface: #ffffff;
+  --color-surface-alt: #faf9f7;
+  --color-border: #e7e4df;
+  --color-border-strong: #d6d2ca;
+
+  /* Texto */
+  --color-text: #15161a;
+  --color-text-secondary: #52555e;
+  --color-text-muted: #94969e;
+  --color-text-on-dark: #f1efe9;
+  --color-text-on-dark-muted: #a6a9b5;
+
+  /* Marca / sidebar (navy quase-preto, sóbrio) */
+  --color-sidebar-bg: #12141c;
+  --color-sidebar-bg-elevated: #191c27;
+  --color-sidebar-border: rgba(255, 255, 255, 0.08);
+  --color-sidebar-hover: rgba(255, 255, 255, 0.06);
+
+  /* Ação primária */
+  --color-primary: #3757e0;
+  --color-primary-hover: #2c47c2;
+  --color-primary-soft: #eef1ff;
+  --color-primary-soft-border: #d6ddff;
+
+  /* Acento quente — uso decorativo/pontual (login, destaques do dashboard),
+     nunca em elementos funcionais/semânticos (badges, botões primários). */
+  --color-accent: #c68a3c;
+  --color-accent-soft: #fbf1e3;
+  --color-accent-soft-border: #f0dcb8;
+
+  /* Severidade / status */
+  --color-danger: #d92d20;
+  --color-danger-bg: #fef3f2;
+  --color-danger-border: #fecdca;
+
+  --color-warning: #b54708;
+  --color-warning-bg: #fffaeb;
+  --color-warning-border: #fedf89;
+
+  --color-info: #175cd3;
+  --color-info-bg: #eff8ff;
+  --color-info-border: #b2ddff;
+
+  --color-success: #067647;
+  --color-success-bg: #ecfdf3;
+  --color-success-border: #abefc6;
+
+  --color-neutral-bg: #f2f4f7;
+  --color-neutral-border: #e4e7ec;
+  --color-neutral-text: #344054;
+
+  /* Elevação — mais suave e estendida, sensação "premium" */
+  --shadow-xs: 0 1px 2px rgba(18, 20, 28, 0.05);
+  --shadow-sm: 0 1px 3px rgba(18, 20, 28, 0.07), 0 1px 2px rgba(18, 20, 28, 0.04);
+  --shadow-md: 0 8px 16px -4px rgba(18, 20, 28, 0.1), 0 3px 6px -3px rgba(18, 20, 28, 0.06);
+  --shadow-lg: 0 20px 32px -8px rgba(18, 20, 28, 0.16), 0 8px 12px -4px rgba(18, 20, 28, 0.08);
+  --shadow-xl: 0 30px 60px -12px rgba(18, 20, 28, 0.25), 0 12px 24px -8px rgba(18, 20, 28, 0.12);
+
+  /* Raios — um pouco mais soltos, look mais moderno */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-full: 999px;
+
+  /* Tipografia — Manrope no corpo (bom x-height, legível em UI densa),
+     Plus Jakarta Sans em títulos (mais caráter geométrico, mas ainda sóbria).
+     --font-serif fica de fora dessa troca — é o toque editorial proposital
+     da hero de login, não faz parte da UI "padrão". */
+  --font-sans: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-heading: 'Plus Jakarta Sans', var(--font-sans);
+  --font-serif: Georgia, 'Iowan Old Style', 'Palatino Linotype', Palatino, serif;
+
+  /* Transições */
+  --transition-fast: 120ms ease;
+  --transition-base: 200ms cubic-bezier(0.2, 0.7, 0.3, 1);
+  --transition-slow: 320ms cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+/* Tema escuro — mesma lista de variáveis, só valores diferentes. Sidebar,
+   AuthTemplate e o hero do dashboard usam --color-sidebar-* e cores fixas de
+   propósito (identidade de marca sempre escura) e por isso não mudam aqui. */
+:root[data-theme='dark'] {
+  --color-bg: #12141a;
+  --color-surface: #1a1d26;
+  --color-surface-alt: #20232e;
+  --color-border: #2b2f3b;
+  --color-border-strong: #3a3f4d;
+
+  --color-text: #edeef2;
+  --color-text-secondary: #b0b3bf;
+  --color-text-muted: #7d8190;
+
+  --color-primary: #5b7cf0;
+  --color-primary-hover: #7191f5;
+  --color-primary-soft: rgba(91, 124, 240, 0.16);
+  --color-primary-soft-border: rgba(91, 124, 240, 0.4);
+
+  --color-accent: #d9a35f;
+  --color-accent-soft: rgba(198, 138, 60, 0.16);
+  --color-accent-soft-border: rgba(198, 138, 60, 0.4);
+
+  --color-danger: #f97066;
+  --color-danger-bg: rgba(217, 45, 32, 0.16);
+  --color-danger-border: rgba(249, 112, 102, 0.4);
+
+  --color-warning: #fdb022;
+  --color-warning-bg: rgba(181, 71, 8, 0.18);
+  --color-warning-border: rgba(253, 176, 34, 0.4);
+
+  --color-info: #6ab0ff;
+  --color-info-bg: rgba(23, 92, 211, 0.18);
+  --color-info-border: rgba(106, 176, 255, 0.4);
+
+  --color-success: #3ddb9b;
+  --color-success-bg: rgba(6, 118, 71, 0.18);
+  --color-success-border: rgba(61, 219, 155, 0.4);
+
+  --color-neutral-bg: #242833;
+  --color-neutral-border: #363b48;
+  --color-neutral-text: #c3c6d1;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 16px -4px rgba(0, 0, 0, 0.45), 0 3px 6px -3px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 20px 32px -8px rgba(0, 0, 0, 0.55), 0 8px 12px -4px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 30px 60px -12px rgba(0, 0, 0, 0.65), 0 12px 24px -8px rgba(0, 0, 0, 0.5);
+}
+
+/* Relatório impresso deve usar tema claro mesmo se o sistema estiver no
+   tema escuro (melhor leitura, economia de tinta) — repete os valores do
+   :root claro, sobrescrevendo tanto :root quanto :root[data-theme='dark'],
+   já que este bloco precisa "ganhar" de qualquer um dos dois. */
+@media print {
+  :root,
+  :root[data-theme='dark'] {
+    --color-bg: #f6f5f3;
+    --color-surface: #ffffff;
+    --color-surface-alt: #faf9f7;
+    --color-border: #e7e4df;
+    --color-border-strong: #d6d2ca;
+
+    --color-text: #15161a;
+    --color-text-secondary: #52555e;
+    --color-text-muted: #94969e;
+
+    --color-primary: #3757e0;
+    --color-primary-hover: #2c47c2;
+    --color-primary-soft: #eef1ff;
+    --color-primary-soft-border: #d6ddff;
+
+    --color-accent: #c68a3c;
+    --color-accent-soft: #fbf1e3;
+    --color-accent-soft-border: #f0dcb8;
+
+    --color-danger: #d92d20;
+    --color-danger-bg: #fef3f2;
+    --color-danger-border: #fecdca;
+
+    --color-warning: #b54708;
+    --color-warning-bg: #fffaeb;
+    --color-warning-border: #fedf89;
+
+    --color-info: #175cd3;
+    --color-info-bg: #eff8ff;
+    --color-info-border: #b2ddff;
+
+    --color-success: #067647;
+    --color-success-bg: #ecfdf3;
+    --color-success-border: #abefc6;
+
+    --color-neutral-bg: #f2f4f7;
+    --color-neutral-border: #e4e7ec;
+    --color-neutral-text: #344054;
+  }
+
+  body {
+    background: #ffffff;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text);
+  -webkit-font-smoothing: antialiased;
+  font-size: 15px;
+  line-height: 1.55;
+  font-variant-numeric: tabular-nums;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+a {
+  color: var(--color-primary);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.page-header {
+  margin-bottom: 2rem;
+}
+
+.page-title {
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  margin: 0;
+  color: var(--color-text);
+}
+
+.page-subtitle {
+  margin: 0.35rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: 0.94rem;
+}
+
+.section-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0;
+  color: var(--color-text);
+}

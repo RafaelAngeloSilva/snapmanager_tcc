@@ -1,0 +1,13 @@
+.board {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding-bottom: 0.75rem;
+  /* Rolagem horizontal só do quadro — a página em si não rola para o lado. */
+  scroll-snap-type: x proximity;
+}
+
+.board > * {
+  scroll-snap-align: start;
+}
