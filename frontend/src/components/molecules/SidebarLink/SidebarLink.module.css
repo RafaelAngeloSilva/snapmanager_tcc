@@ -1,0 +1,39 @@
+.link {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  color: var(--color-text-on-dark-muted);
+  text-decoration: none;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: background-color var(--transition-fast), color var(--transition-fast),
+    box-shadow var(--transition-fast);
+  position: relative;
+}
+
+.link:hover {
+  background: var(--color-sidebar-hover);
+  color: var(--color-text-on-dark);
+}
+
+.icon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.active {
+  background: rgba(55, 87, 224, 0.18);
+  color: #fff;
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+.active .icon {
+  opacity: 1;
+  color: #8fa4ff;
+}

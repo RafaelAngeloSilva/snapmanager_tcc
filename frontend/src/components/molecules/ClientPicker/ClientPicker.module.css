@@ -1,0 +1,111 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  position: relative;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.selectedChip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border: 1px solid var(--color-primary-soft-border);
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.selectedChipName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.changeButton {
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: underline;
+  flex-shrink: 0;
+}
+
+/* Modo compacto: usado no filtro por cliente da listagem de pedidos, onde
+   o espaço horizontal disponível na toolbar é bem menor que num formulário. */
+.compact .selectedChip {
+  padding: 0.5rem 0.65rem;
+  font-size: 0.85rem;
+}
+
+.compact .label {
+  font-size: 0.78rem;
+}
+
+.searchBox {
+  position: relative;
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 0.3rem);
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.dropdownState {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 0.55rem 0.9rem;
+  gap: 0.1rem;
+}
+
+.option:hover {
+  background: var(--color-surface-alt);
+}
+
+.optionName {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.optionMeta {
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.errorText {
+  font-size: 0.8rem;
+  color: var(--color-danger);
+}

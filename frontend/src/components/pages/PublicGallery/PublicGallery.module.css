@@ -1,0 +1,159 @@
+.page {
+  min-height: 100vh;
+  background: var(--color-bg);
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  padding: 3.5rem 1.5rem 3rem;
+  background: radial-gradient(circle at 15% 15%, #232a3f 0%, var(--color-sidebar-bg) 45%, #0a0b10 100%);
+  color: var(--color-text-on-dark);
+  text-align: center;
+}
+
+.themeToggle {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.5rem;
+  z-index: 2;
+}
+
+.heroGlowOne,
+.heroGlowTwo {
+  position: absolute;
+  border-radius: 50%;
+  /* Sem filter: blur() — o radial-gradient já desbota até transparente, e um
+     blur de 60px em elementos de ~400px é caro de repintar durante a rolagem. */
+  pointer-events: none;
+}
+
+.heroGlowOne {
+  width: 420px;
+  height: 420px;
+  top: -140px;
+  right: -100px;
+  background: radial-gradient(circle, rgba(199, 138, 60, 0.35) 0%, rgba(199, 138, 60, 0) 70%);
+}
+
+.heroGlowTwo {
+  width: 360px;
+  height: 360px;
+  bottom: -160px;
+  left: -80px;
+  background: radial-gradient(circle, rgba(67, 99, 235, 0.3) 0%, rgba(67, 99, 235, 0) 70%);
+}
+
+.heroGrain {
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.heroContent {
+  position: relative;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.brandLogo {
+  height: 24px;
+  width: auto;
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.description {
+  margin: 0.75rem 0 0;
+  color: var(--color-text-on-dark-muted);
+  font-size: 0.98rem;
+  line-height: 1.5;
+}
+
+.expiresAt {
+  margin: 1rem 0 0;
+  font-size: 0.82rem;
+  color: var(--color-text-on-dark-muted);
+}
+
+.content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 6rem;
+}
+
+.loadingBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 4rem 0;
+  color: var(--color-text-secondary);
+}
+
+.noticeBox {
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  color: var(--color-warning);
+  padding: 0.85rem 1.1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.successBox {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--color-success-bg);
+  border: 1px solid var(--color-success-border);
+  color: var(--color-success);
+  padding: 0.85rem 1.1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+}
+
+.confirmBar {
+  position: sticky;
+  bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2rem;
+  padding: 1rem 1.25rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  flex-wrap: wrap;
+}
+
+.confirmCount {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: 0.92rem;
+}
+
+.submitError {
+  color: var(--color-danger);
+  font-size: 0.85rem;
+}
+
+/* Seletor Galeria | SnapSwipe, sobre a hero escura. */
+.modeSwitch {
+  display: flex;
+  justify-content: center;
+  margin-top: 1.25rem;
+}

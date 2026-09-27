@@ -1,0 +1,44 @@
+.column {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 290px;
+  width: 290px;
+  max-height: 100%;
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+/* Realce quando um card está pairando sobre a coluna. */
+.columnOver {
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.taskList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0 0.7rem 0.8rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 90px;
+}
+
+.empty {
+  margin: 0.4rem 0 0;
+  padding: 1.1rem 0.6rem;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+@media (max-width: 640px) {
+  .column {
+    flex-basis: 84vw;
+    width: 84vw;
+  }
+}

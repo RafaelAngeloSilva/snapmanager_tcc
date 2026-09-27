@@ -1,0 +1,47 @@
+/* Fica sobre a hero escura da galeria pública: cores fixas, como o
+   ThemeToggle variant="onDark" já faz nessa tela. */
+.switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(6px);
+}
+
+.option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 0.95rem;
+  border: none;
+  border-radius: var(--radius-full);
+  background: none;
+  color: rgba(255, 255, 255, 0.82);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.option:hover {
+  color: #fff;
+}
+
+.option:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.optionActive {
+  background: #fff;
+  color: #14161f;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .option {
+    transition: none;
+  }
+}

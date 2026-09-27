@@ -1,0 +1,59 @@
+.titleCell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.title {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.watermarkIcon {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.orderLink {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.person {
+  color: var(--color-text-secondary);
+  font-size: 0.88rem;
+}
+
+.muted {
+  color: var(--color-text-muted);
+}
+
+.counts {
+  font-size: 0.88rem;
+  color: var(--color-text-secondary);
+}
+
+.selectedCount {
+  color: var(--color-success);
+  font-weight: 600;
+}
+
+.rowCompleted {
+  background: var(--color-success-bg);
+}
+
+.rowCompleted:hover {
+  background: var(--color-success-bg);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.3rem;
+}

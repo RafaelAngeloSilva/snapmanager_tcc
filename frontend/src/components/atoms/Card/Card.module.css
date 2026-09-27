@@ -1,0 +1,35 @@
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  /* Evita que fundos de filhos (ex.: cabeçalho de Table com padding="none")
+     vazem por cima dos cantos arredondados. */
+  overflow: hidden;
+}
+
+.paddingNone {
+  padding: 0;
+}
+
+.paddingSm {
+  padding: 1.1rem 1.25rem;
+}
+
+.paddingMd {
+  padding: 1.6rem 1.75rem;
+}
+
+.paddingLg {
+  padding: 2.25rem 2.5rem;
+}
+
+.hoverable {
+  transition: box-shadow var(--transition-base), transform var(--transition-base), border-color var(--transition-base);
+}
+
+.hoverable:hover {
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+  border-color: var(--color-border-strong);
+}

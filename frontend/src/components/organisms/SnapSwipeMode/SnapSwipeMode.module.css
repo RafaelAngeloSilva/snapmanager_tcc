@@ -1,0 +1,93 @@
+.mode {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  max-width: 30rem;
+  margin: 0 auto;
+}
+
+/* Altura do baralho: usa a altura real da janela (dvh acompanha a barra do
+   navegador no celular), com teto para não esticar no desktop. */
+.deck {
+  position: relative;
+  width: 100%;
+  height: min(58dvh, 30rem);
+  min-height: 15rem;
+}
+
+@supports not (height: 1dvh) {
+  .deck {
+    height: min(58vh, 30rem);
+  }
+}
+
+.hint {
+  margin: 0;
+  text-align: center;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.kbd {
+  display: inline-block;
+  min-width: 1.4rem;
+  padding: 0.05rem 0.3rem;
+  border: 1px solid var(--color-border-strong);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--color-surface-alt);
+  font-family: inherit;
+  font-size: 0.72rem;
+  color: var(--color-text-secondary);
+  text-align: center;
+}
+
+.limitWarning {
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.disabledNotice {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+.reviewLink {
+  border: none;
+  background: none;
+  padding: 0.35rem;
+  color: var(--color-primary);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.reviewLink:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+  border-radius: var(--radius-sm);
+}
+
+/* Telas baixas (celular deitado): baralho menor para os botões caberem. */
+@media (max-height: 620px) {
+  .deck {
+    height: 46dvh;
+  }
+
+  .hint {
+    display: none;
+  }
+}

@@ -1,0 +1,21 @@
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.stateBox {
+  padding: 1.5rem;
+}
+
+.loadingBox {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 2.5rem 1.5rem;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  justify-content: center;
+}

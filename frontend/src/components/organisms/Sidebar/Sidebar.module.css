@@ -1,0 +1,95 @@
+.sidebar {
+  width: 258px;
+  flex-shrink: 0;
+  /* Antes, a sidebar só tinha altura via flex-stretch do container pai
+     (.layout, que usa min-height: 100vh) — numa página mais alta que a
+     viewport (ex.: Dashboard com os cards + gráficos + alertas), o próprio
+     .layout crescia além de 100vh e "esticava" a sidebar junto, empurrando
+     o rodapé (usuário/Sair) pra bem abaixo da área visível. Fixar a altura
+     em 100vh + sticky mantém a sidebar sempre do tamanho da viewport e
+     ancorada nela, independente de quão alto o conteúdo principal fique —
+     o conteúdo principal continua rolando normalmente por conta própria.
+  */
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  background: linear-gradient(180deg, var(--color-sidebar-bg) 0%, #0d0f16 100%);
+  color: var(--color-text-on-dark);
+  display: flex;
+  flex-direction: column;
+  padding: 1.5rem 1.1rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem 2rem;
+}
+
+.brandLogo {
+  height: 30px;
+  width: auto;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+  /* min-height: 0 é o que permite este item flex realmente encolher e rolar
+     por dentro (overflow-y) em vez de simplesmente crescer — sem isso, o
+     overflow não teria efeito num filho de flex-column. Só entra em jogo em
+     viewports muito baixas, onde os 5 links não caibam entre a logo e o
+     rodapé; o rodapé (usuário/Sair) nunca é empurrado por isso. */
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.footer {
+  border-top: 1px solid var(--color-sidebar-border);
+  padding-top: 1.1rem;
+  margin-top: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.3rem 0.5rem;
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.userName {
+  font-size: 0.87rem;
+  font-weight: 600;
+  color: var(--color-text-on-dark);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userRole {
+  font-size: 0.74rem;
+  color: var(--color-text-on-dark-muted);
+  text-transform: capitalize;
+}
+
+.logoutButton {
+  justify-content: flex-start;
+}
+
+@media print {
+  .sidebar {
+    display: none;
+  }
+}

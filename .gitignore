@@ -1,0 +1,45 @@
+# ============================================================
+# SnapManager — o que NUNCA vai para o repositório
+# ============================================================
+
+# Segredos (senhas, APP_KEY, token da Clicksign, Google OAuth...)
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+auth.json
+
+# Dependências e build (reinstaláveis com composer install / npm install)
+node_modules/
+backend/vendor/
+frontend/dist/
+backend/public/build/
+backend/public/hot
+backend/public/storage
+
+# Dados de clientes e arquivos gerados em execução
+# (fotos das galerias, contratos, fotos de perfil, logs, sessões, cache)
+backend/storage/app/private/*
+!backend/storage/app/private/.gitignore
+backend/storage/app/public/*
+!backend/storage/app/public/.gitignore
+backend/storage/logs/*
+!backend/storage/logs/.gitignore
+backend/storage/framework/cache/data/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+*.sqlite
+*.sqlite-journal
+
+# Arquivos locais / temporários
+backend/big.png
+.phpunit.result.cache
+.phpunit.cache/
+*.log
+.tmp-claude/
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

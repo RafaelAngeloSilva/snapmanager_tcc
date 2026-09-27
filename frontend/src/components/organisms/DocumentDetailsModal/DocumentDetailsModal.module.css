@@ -1,0 +1,297 @@
+.loadingBox {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 1rem 0;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.subtitle {
+  margin: 0.15rem 0 0;
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+}
+
+.integrationError {
+  padding: 0.8rem 0.95rem;
+  border-radius: var(--radius-md);
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.integrationError p {
+  margin: 0;
+}
+
+.integrationErrorTitle {
+  font-weight: 700;
+  margin-bottom: 0.25rem !important;
+}
+
+.integrationErrorHint {
+  margin-top: 0.4rem !important;
+  color: var(--color-text-secondary);
+}
+
+.details {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem 1.25rem;
+}
+
+.details div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.details dt {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-muted);
+}
+
+.details dd {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+.notes {
+  white-space: pre-line;
+}
+
+/* Status + "Sincronizar status" lado a lado no cabeçalho. */
+.statusBox {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.files {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.fileCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  flex-wrap: wrap;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-alt);
+}
+
+/* Arquivo final: tom de sucesso do tema + rótulo "Assinado" + texto do
+   botão — a finalidade não depende só da cor. */
+.fileCardSigned {
+  background: var(--color-success-bg);
+  border-color: var(--color-success-border);
+}
+
+.fileInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.fileKind {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-muted);
+}
+
+.fileCardSigned .fileKind {
+  color: var(--color-success);
+}
+
+.fileName {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.fileMeta {
+  font-size: 0.78rem;
+  color: var(--color-text-secondary);
+}
+
+.fileHint {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin: 0 0 0.7rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.count {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.signers {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.muted {
+  margin: 0 0 0.75rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.newSigner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.9rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.newSignerActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.technical {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.technical summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.technical dl {
+  margin: 0.5rem 0 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.technical dt {
+  font-weight: 700;
+}
+
+.technical dd {
+  margin: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  overflow-wrap: anywhere;
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.footerSide {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .details {
+    grid-template-columns: 1fr;
+  }
+
+  .header {
+    flex-direction: column;
+  }
+
+  .statusBox {
+    justify-content: flex-start;
+  }
+
+  .footer,
+  .footerSide {
+    flex-direction: column-reverse;
+    align-items: stretch;
+  }
+}
+
+/* O espaçamento da seção Arquivos vem do gap; o título não soma margem. */
+.files > .sectionTitle {
+  margin-bottom: 0;
+}
+
+.fileActions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+/* PDF para assinatura ainda não gerado: tom de alerta + texto explicando
+   (a cor não é a única pista). */
+.fileCardWarning {
+  border-style: dashed;
+  border-color: var(--color-danger-border);
+  background: var(--color-danger-bg);
+}
+
+.fileCardWarning .fileKind {
+  color: var(--color-danger);
+}
