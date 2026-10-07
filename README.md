@@ -30,10 +30,14 @@ O SnapManager permite que um estúdio fotográfico controle, em um único painel
 
 ## Requisitos de ambiente
 
-- PHP >= 8.2 com extensões padrão do Laravel (`intl` incluída, usada por comandos de formatação) **+ extensão `gd`** (usada para gerar a marca d'água das fotos de galeria via Intervention Image). No XAMPP, a DLL já vem instalada mas desabilitada por padrão — descomente `extension=gd` no `php.ini` e reinicie o PHP.
+- PHP >= 8.2 com extensões padrão do Laravel (`intl` incluída, usada por comandos de formatação) **+ extensões `gd`** (marca d'água e miniaturas das fotos de galeria via Intervention Image) **e `zip`** (validação dos contratos .docx). Ambas são declaradas no `composer.json`. No XAMPP, as DLLs já vêm instaladas mas podem estar desabilitadas — descomente `extension=gd` e `extension=zip` no `php.ini` e reinicie o PHP.
 - Composer
 - PostgreSQL >= 13 rodando localmente (ou acessível via rede)
 - Node.js >= 18 (testado com 22) e npm
+
+## Deploy em produção
+
+Backend na Railway (Railpack, PostgreSQL, Amazon S3, LibreOffice): veja [docs/deploy-railway.md](docs/deploy-railway.md).
 
 ## Como rodar o backend
 
@@ -495,7 +499,7 @@ Cuidados para o deploy Linux:
 - **Fontes**: contratos feitos no Windows usam Calibri/Arial/Times. Sem essas fontes, o LibreOffice as substitui e a paginação muda. Instale `fonts-crosextra-carlito` (métrica de Calibri), `fonts-crosextra-caladea` (Cambria) e `fonts-liberation` (Arial/Times/Courier), e **sempre confira o PDF** antes de enviar;
 - **Usuário e permissões**: o processo roda como o usuário do PHP (ex.: `www-data`), que precisa executar o `soffice` e escrever em `storage/framework/document-conversions` (ou em `DOCUMENT_CONVERTER_TEMP_PATH`). Nenhum `HOME` é necessário, porque o perfil é criado no temporário de cada conversão;
 - **Recursos**: cada conversão abre um processo do LibreOffice (≈150–300 MB de RAM, alguns segundos de CPU). O timeout padrão é 90 s (`DOCUMENT_CONVERTER_TIMEOUT`). Com muitos envios simultâneos, a próxima evolução é mover a conversão para uma fila (`queue:work`) com poucos workers;
-- **Armazenamento**: o `.docx`, o PDF convertido e o assinado ficam no disco privado (`storage/app/private/documents`), que precisa ser **persistente** entre deploys (volume ou disco dedicado).
+- **Armazenamento**: o `.docx`, o PDF convertido e o assinado ficam no armazenamento persistente do SnapManager (`SNAPMANAGER_FILESYSTEM_DISK`: disco privado local no desenvolvimento, bucket S3 privado em produção). Na conversão, o LibreOffice trabalha só com cópias temporárias, apagadas ao final. Ver [docs/armazenamento-s3.md](docs/armazenamento-s3.md).
 
 ### Ações e horários
 

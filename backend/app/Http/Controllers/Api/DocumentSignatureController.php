@@ -9,11 +9,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\DocumentResource;
 use App\Models\Document;
 use App\Services\DocumentSignatureService;
+use App\Services\FileStorage;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -77,9 +77,10 @@ class DocumentSignatureController extends Controller
     /**
      * React → Laravel → Clicksign → Laravel → usuário. O navegador nunca
      * recebe o link temporário da Clicksign nem o Access Token: o arquivo
-     * é baixado pelo servidor (e guardado em cópia local) e servido daqui.
+     * é baixado pelo servidor (e guardado no armazenamento persistente —
+     * local ou S3) e servido daqui, depois da DocumentPolicy.
      */
-    public function downloadSigned(Document $document): Response
+    public function downloadSigned(Document $document, FileStorage $files): Response
     {
         Gate::authorize('downloadFiles', $document);
 
@@ -89,11 +90,7 @@ class DocumentSignatureController extends Controller
             return $this->failure($e);
         }
 
-        return Storage::disk(DocumentSignatureService::DISK)->response(
-            $path,
-            DocumentController::downloadName($document, 'assinado'),
-            ['Content-Type' => 'application/pdf'],
-        );
+        return $files->response($path, DocumentController::downloadName($document, 'assinado'), 'application/pdf');
     }
 
     /**

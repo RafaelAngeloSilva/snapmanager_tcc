@@ -2,113 +2,126 @@
 
 namespace App\Services;
 
+use App\Exceptions\StoredFileNotFoundException;
 use App\Models\GalleryImage;
-use Illuminate\Support\Facades\Storage;
+use App\Support\FileKeys;
 
 /**
- * Garante que cada foto tenha miniatura (grade interna) e, quando a galeria usa
- * marca d'água, miniatura com marca (galeria pública).
+ * Versões derivadas das fotos: miniatura (grade interna), miniatura com
+ * marca (galeria pública) e prévia ampliada leve (lightbox público quando a
+ * galeria não usa marca d'água).
  *
- * Por que existe: fotos enviadas antes da miniatura ser implementada (ou cujo
- * upload falhou ao gerá-la) ficavam com thumbnail_path nulo, e a grade caía no
- * ORIGINAL — arquivos de 2 a 9 MB e 4000+ px. O navegador precisava baixar e
- * decodificar dezenas de fotos gigantes enquanto a página rolava, o que travava
- * a rolagem e segurava o servidor PHP (que atende uma requisição por vez).
+ * Tudo pelo FileStorage — funciona com disco local ou S3.
  *
- * A miniatura é gerada uma única vez (sob demanda no primeiro acesso, ou em
- * lote pelo comando `galleries:thumbnails`) e reaproveitada daí em diante.
+ * Custo no S3: quando a key da miniatura já está no banco, ela é usada
+ * direto (nenhum exists()/HEAD antes). O original só é baixado quando a
+ * miniatura precisa ser GERADA (fotos antigas, sem miniatura) — uma vez por
+ * foto; depois disso a grade nunca mais toca no original. Rode
+ * `php artisan galleries:thumbnails` antes de migrar para o S3 para que
+ * isso nem aconteça em produção.
  */
 class GalleryThumbnailService
 {
-    public const DISK = 'local';
-
     /** Mesmo tamanho usado no upload (GalleryController::THUMBNAIL_MAX_DIMENSION). */
     public const MAX_DIMENSION = 480;
 
-    public function __construct(private readonly WatermarkService $watermarkService) {}
+    /** Lado maior da versão "ampliada" (lightbox) quando não há marca d'água. */
+    public const PREVIEW_MAX_DIMENSION = 2000;
 
-    /** Caminho da miniatura sem marca, gerando-a se ainda não existir. */
+    public function __construct(
+        private readonly WatermarkService $watermarkService,
+        private readonly FileStorage $files,
+    ) {}
+
+    /** Key da miniatura sem marca; gera se ainda não existir. Null = não foi possível gerar. */
     public function ensureThumbnail(GalleryImage $image): ?string
     {
-        return $this->ensure($image, 'thumbnail_path', $image->path, 'thumbnails');
+        return $image->thumbnail_path ?: $this->regenerate($image, watermarked: false);
     }
 
-    /** Caminho da miniatura com marca d'água, gerando-a se houver versão com marca. */
+    /** Key da miniatura com marca d'água; null se a foto não tem versão com marca. */
     public function ensureWatermarkedThumbnail(GalleryImage $image): ?string
     {
         if (! $image->watermarked_path) {
             return null;
         }
 
-        return $this->ensure($image, 'watermarked_thumbnail_path', $image->watermarked_path, 'watermarked-thumbnails');
+        return $image->watermarked_thumbnail_path ?: $this->regenerate($image, watermarked: true);
     }
-
-    /** Lado maior da versão "ampliada" (lightbox) quando não há marca d'água. */
-    public const PREVIEW_MAX_DIMENSION = 2000;
 
     /**
-     * Versão ampliada leve (máx. 2000 px) para o lightbox da galeria pública
-     * quando a galeria NÃO usa marca d'água — sem isso, o cliente baixava o
-     * original de vários MB a cada foto aberta. Fica em disco ao lado das
-     * outras cópias; não precisa de coluna no banco (o caminho é derivado).
+     * (Re)gera a miniatura a partir da fonte — usado também quando a key
+     * gravada no banco aponta para um objeto que sumiu do armazenamento.
      */
-    public function ensurePreview(GalleryImage $image): ?string
+    public function regenerate(GalleryImage $image, bool $watermarked): ?string
     {
-        $disk = Storage::disk(self::DISK);
-        $storedName = $image->stored_name ?: basename((string) $image->path);
-        $relativePath = "galleries/{$image->gallery_id}/previews/{$storedName}";
+        $source = $watermarked ? $image->watermarked_path : $image->path;
+        $variant = $watermarked ? FileKeys::GALLERY_WATERMARKED_THUMBNAILS : FileKeys::GALLERY_THUMBNAILS;
+        $column = $watermarked ? 'watermarked_thumbnail_path' : 'thumbnail_path';
 
-        if ($disk->exists($relativePath)) {
-            return $relativePath;
-        }
+        $key = $this->generate($image, $source, $variant, self::MAX_DIMENSION);
 
-        if (! $image->path || ! $disk->exists($image->path)) {
-            return null;
-        }
-
-        // Foto já pequena: não vale gerar cópia.
-        if ($image->width && $image->height && max($image->width, $image->height) <= self::PREVIEW_MAX_DIMENSION) {
-            return $image->path;
-        }
-
-        return $this->watermarkService->resizeCopy(
-            $disk->path($image->path),
-            $disk->path($relativePath),
-            self::PREVIEW_MAX_DIMENSION
-        ) ? $relativePath : null;
-    }
-
-    private function ensure(GalleryImage $image, string $column, ?string $sourcePath, string $subfolder): ?string
-    {
-        $disk = Storage::disk(self::DISK);
-
-        if ($image->{$column} && $disk->exists($image->{$column})) {
-            return $image->{$column};
-        }
-
-        if (! $sourcePath || ! $disk->exists($sourcePath)) {
-            return null;
-        }
-
-        $storedName = $image->stored_name ?: basename($sourcePath);
-        $relativePath = "galleries/{$image->gallery_id}/{$subfolder}/{$storedName}";
-
-        $generated = $this->watermarkService->resizeCopy(
-            $disk->path($sourcePath),
-            $disk->path($relativePath),
-            self::MAX_DIMENSION
-        );
-
-        if (! $generated) {
+        if ($key === null) {
             return null;
         }
 
         // saveQuietly: sem disparar eventos/observers nem mexer em updated_at
         // da foto por causa de um detalhe interno de armazenamento.
         $image->timestamps = false;
-        $image->forceFill([$column => $relativePath])->saveQuietly();
+        $image->forceFill([$column => $key])->saveQuietly();
         $image->timestamps = true;
 
-        return $relativePath;
+        return $key;
+    }
+
+    /**
+     * Key derivada da prévia ampliada (sem coluna no banco). Quem serve tenta
+     * esta key primeiro e só chama generatePreview() se ela não existir.
+     */
+    public function previewKey(GalleryImage $image): string
+    {
+        return FileKeys::gallery($image->gallery_id, FileKeys::GALLERY_PREVIEWS, $this->fileName($image));
+    }
+
+    /** Foto já pequena: serve o próprio arquivo, não vale gerar cópia. */
+    public function needsPreview(GalleryImage $image): bool
+    {
+        return ! ($image->width && $image->height && max($image->width, $image->height) <= self::PREVIEW_MAX_DIMENSION);
+    }
+
+    /** Gera a prévia ampliada leve (máx. 2000 px) a partir do original. */
+    public function generatePreview(GalleryImage $image): ?string
+    {
+        return $this->generate($image, $image->path, FileKeys::GALLERY_PREVIEWS, self::PREVIEW_MAX_DIMENSION);
+    }
+
+    private function generate(GalleryImage $image, ?string $sourceKey, string $variant, int $maxDimension): ?string
+    {
+        if (! $sourceKey) {
+            return null;
+        }
+
+        try {
+            $source = $this->files->get($sourceKey);
+        } catch (StoredFileNotFoundException) {
+            return null;
+        }
+
+        $fileName = $this->fileName($image);
+        $resized = $this->watermarkService->resized($source, $maxDimension, pathinfo($fileName, PATHINFO_EXTENSION));
+
+        if ($resized === null) {
+            return null;
+        }
+
+        $key = FileKeys::gallery($image->gallery_id, $variant, $fileName);
+        $this->files->put($key, $resized, $image->mime_type);
+
+        return $key;
+    }
+
+    private function fileName(GalleryImage $image): string
+    {
+        return $image->stored_name ?: basename((string) $image->path);
     }
 }

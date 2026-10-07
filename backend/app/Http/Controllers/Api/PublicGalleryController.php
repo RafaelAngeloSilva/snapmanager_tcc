@@ -7,15 +7,24 @@ use App\Http\Requests\SelectGalleryImagesRequest;
 use App\Http\Resources\PublicGalleryResource;
 use App\Models\Gallery;
 use App\Models\GalleryImage;
+use App\Exceptions\StoredFileNotFoundException;
+use App\Services\FileStorage;
 use App\Services\GalleryThumbnailService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
+/**
+ * Galeria pública (link por token). Os arquivos vêm do FileStorage (local
+ * ou S3) e são servidos pelo Laravel — o cliente nunca recebe URL do S3.
+ * Com marca d'água, o ORIGINAL nunca é servido por aqui.
+ */
 class PublicGalleryController extends Controller
 {
-    private const DISK = 'local';
+    /** Arquivos imutáveis (UUID por upload): o navegador reaproveita a cópia. */
+    private const PUBLIC_CACHE = 'private, max-age=3600';
+
+    public function __construct(private readonly FileStorage $files) {}
 
     public function show(Gallery $gallery): PublicGalleryResource
     {
@@ -66,22 +75,28 @@ class PublicGalleryController extends Controller
     public function showImageFile(Gallery $gallery, int $image, GalleryThumbnailService $thumbnails): StreamedResponse
     {
         $galleryImage = $gallery->images()->findOrFail($image);
+        $headers = ['Cache-Control' => self::PUBLIC_CACHE];
 
         // O público sempre vê a versão com marca d'água quando ela existe
-        // (já limitada a 2200 px). Sem marca d'água, serve uma cópia ampliada
-        // leve (máx. 2000 px) em vez do original de vários MB.
-        $servedPath = $galleryImage->watermarked_path
-            ?: ($thumbnails->ensurePreview($galleryImage) ?: $galleryImage->path);
+        // (já limitada a 2200 px).
+        if ($galleryImage->watermarked_path) {
+            return $this->files->response($galleryImage->watermarked_path, $galleryImage->original_name, $galleryImage->mime_type, $headers);
+        }
 
-        abort_unless(Storage::disk(self::DISK)->exists($servedPath), 404);
+        // Galeria sem marca d'água: prévia leve (máx. 2000 px) em vez do
+        // original de vários MB. Tenta a prévia direto (uma leitura só) e
+        // só gera se ela ainda não existir.
+        if ($thumbnails->needsPreview($galleryImage)) {
+            try {
+                return $this->files->response($thumbnails->previewKey($galleryImage), $galleryImage->original_name, $galleryImage->mime_type, $headers);
+            } catch (StoredFileNotFoundException) {
+                if ($preview = $thumbnails->generatePreview($galleryImage)) {
+                    return $this->files->response($preview, $galleryImage->original_name, $galleryImage->mime_type, $headers);
+                }
+            }
+        }
 
-        return Storage::disk(self::DISK)->response($servedPath, $galleryImage->original_name, [
-            'Content-Type' => $galleryImage->mime_type,
-            // Arquivo imutável (nome UUID por upload): o navegador reaproveita
-            // a cópia em cache em vez de repetir a requisição ao PHP toda vez
-            // que a grade de fotos é montada.
-            'Cache-Control' => 'private, max-age=3600',
-        ]);
+        return $this->files->response($galleryImage->path, $galleryImage->original_name, $galleryImage->mime_type, $headers);
     }
 
     /**
@@ -93,23 +108,26 @@ class PublicGalleryController extends Controller
     public function showThumbnailFile(Gallery $gallery, int $image, GalleryThumbnailService $thumbnails): StreamedResponse
     {
         $galleryImage = $gallery->images()->findOrFail($image);
+        $headers = ['Cache-Control' => self::PUBLIC_CACHE];
+        $watermarked = (bool) $galleryImage->watermarked_path;
 
-        // Gera a miniatura na hora se ela ainda não existir (fotos antigas),
-        // em vez de mandar o arquivo cheio de vários MB para uma célula da grade.
-        // Com marca d'água, a miniatura sai da cópia COM marca — o original
-        // sem marca nunca é exposto aqui.
-        $servedPath = $galleryImage->watermarked_path
-            ? ($thumbnails->ensureWatermarkedThumbnail($galleryImage) ?: $galleryImage->watermarked_path)
-            : ($thumbnails->ensureThumbnail($galleryImage) ?: $galleryImage->path);
+        // Fallback se a miniatura não puder ser gerada: a versão cheia COM
+        // marca (ou o original, quando a galeria não usa marca d'água).
+        $fallback = $watermarked ? $galleryImage->watermarked_path : $galleryImage->path;
+        $key = ($watermarked
+            ? $thumbnails->ensureWatermarkedThumbnail($galleryImage)
+            : $thumbnails->ensureThumbnail($galleryImage)) ?: $fallback;
 
-        abort_unless(Storage::disk(self::DISK)->exists($servedPath), 404);
+        try {
+            return $this->files->response($key, $galleryImage->original_name, $galleryImage->mime_type, $headers);
+        } catch (StoredFileNotFoundException $e) {
+            if ($key === $fallback) {
+                throw $e;
+            }
 
-        return Storage::disk(self::DISK)->response($servedPath, $galleryImage->original_name, [
-            'Content-Type' => $galleryImage->mime_type,
-            // Arquivo imutável (nome UUID por upload): o navegador reaproveita
-            // a cópia em cache em vez de repetir a requisição ao PHP toda vez
-            // que a grade de fotos é montada.
-            'Cache-Control' => 'private, max-age=3600',
-        ]);
+            $key = $thumbnails->regenerate($galleryImage, $watermarked) ?: $fallback;
+
+            return $this->files->response($key, $galleryImage->original_name, $galleryImage->mime_type, $headers);
+        }
     }
 }

@@ -17,6 +17,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Arquivos persistentes do SnapManager
+    |--------------------------------------------------------------------------
+    |
+    | Disco onde ficam fotos das galerias, documentos e fotos de perfil. Todo
+    | acesso passa por App\Services\FileStorage, que lê SÓ este valor:
+    |
+    |   SNAPMANAGER_FILESYSTEM_DISK=local  → storage/app/private (desenvolvimento)
+    |   SNAPMANAGER_FILESYSTEM_DISK=s3     → bucket privado no Amazon S3 (produção)
+    |
+    | Com "s3", as variáveis AWS_* abaixo passam a ser obrigatórias. Ver
+    | docs/armazenamento-s3.md.
+    |
+    */
+
+    'snapmanager' => [
+        'disk' => env('SNAPMANAGER_FILESYSTEM_DISK', 'local'),
+
+        // Onde as fotos de perfil ficavam antes (disco "public", servido por
+        // storage:link). Só é lido como fallback para fotos antigas.
+        'legacy_profile_photo_disk' => 'public',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |
@@ -47,6 +71,10 @@ return [
             'report' => false,
         ],
 
+        // Bucket PRIVADO: sem "visibility"/ACL (o bucket bloqueia acesso
+        // público; os arquivos são servidos pelo Laravel após as regras de
+        // acesso). AWS_ENDPOINT/AWS_USE_PATH_STYLE_ENDPOINT só para serviços
+        // compatíveis com S3 (MinIO, R2...); na AWS ficam vazios.
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

@@ -13,19 +13,29 @@ use App\Http\Resources\GalleryImageResource;
 use App\Http\Resources\GalleryResource;
 use App\Models\Gallery;
 use App\Models\GalleryImage;
+use App\Exceptions\StoredFileNotFoundException;
+use App\Services\FileStorage;
 use App\Services\GalleryThumbnailService;
 use App\Services\WatermarkService;
+use App\Support\ExecutionTimeBudget;
+use App\Support\FileKeys;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
+/**
+ * Galerias (lado interno, equipe). Todos os arquivos passam pelo
+ * FileStorage — disco local no desenvolvimento, bucket S3 privado em
+ * produção — e são servidos pelo Laravel depois das regras de acesso.
+ */
 class GalleryController extends Controller
 {
-    private const DISK = 'local';
+    /** Cache no navegador: arquivos imutáveis (UUID por upload). */
+    private const PRIVATE_CACHE = 'private, max-age=86400';
 
     /**
      * Lado maior da miniatura, em pixels — suficiente pra uma célula de
@@ -34,7 +44,19 @@ class GalleryController extends Controller
      */
     private const THUMBNAIL_MAX_DIMENSION = 480;
 
-    public function __construct(private readonly WatermarkService $watermarkService) {}
+    /**
+     * Tempo máximo para processar UMA foto (gravar o original no S3, gerar
+     * marca d'água e miniaturas e gravá-las). Renovado a cada foto — ver
+     * ExecutionTimeBudget. O front-end já envia uma foto por requisição;
+     * isto protege também lotes enviados de uma vez pela API.
+     */
+    private const SECONDS_PER_PHOTO = 120;
+
+    public function __construct(
+        private readonly WatermarkService $watermarkService,
+        private readonly FileStorage $files,
+        private readonly ExecutionTimeBudget $timeBudget,
+    ) {}
 
     public function index(Request $request): AnonymousResourceCollection
     {
@@ -118,42 +140,91 @@ class GalleryController extends Controller
     {
         $shouldWatermark = $gallery->shouldWatermark();
 
-        // 1) Processamento pesado (gravar arquivo, marca d'água, miniaturas)
-        //    FORA da transação. Antes tudo isso rodava com a transação aberta:
-        //    a conexão com o banco ficava presa por vários segundos por foto,
-        //    segurando locks enquanto o GD redimensionava imagens.
+        // A imagem de marca d'água (logo) é lida UMA vez por upload, não uma
+        // vez por foto (no S3 seriam N downloads iguais).
+        $watermarkImage = $shouldWatermark ? $this->watermarkImageBytes($gallery) : null;
+
+        // Processamento pesado (marca d'água, miniaturas, envio ao
+        // armazenamento) FORA da transação — a conexão com o banco não fica
+        // presa enquanto o GD processa. Tudo sai do arquivo temporário do
+        // upload (PHP) e só os RESULTADOS vão para o armazenamento: nada é
+        // baixado do S3 durante o upload e nada fica no disco do servidor.
         $prepared = [];
+        $written = [];
+        $committed = false;
+
+        // Se a requisição MORRER no meio (ex.: tempo de execução esgotado —
+        // erro fatal, que não passa pelo catch abaixo), os objetos já
+        // gravados no armazenamento seriam órfãos: o banco não chegou a
+        // registrar nada. A limpeza roda no encerramento do PHP.
+        register_shutdown_function(function () use (&$written, &$committed, $gallery) {
+            if ($committed || $written === []) {
+                return;
+            }
+
+            $this->timeBudget->renew(30);
+            $this->files->delete($written);
+
+            Log::warning('Upload de fotos interrompido: objetos já gravados foram removidos.', [
+                'gallery_id' => $gallery->id,
+                'objects_removed' => count($written),
+            ]);
+        });
 
         try {
             foreach ($request->file('images', []) as $file) {
-                $extension = $file->extension() ?: $file->getClientOriginalExtension();
-                $storedName = Str::uuid()->toString().'.'.$extension;
-                $path = $file->storeAs("galleries/{$gallery->id}", $storedName, self::DISK);
+                // Cada foto com o próprio orçamento de tempo (o limite do PHP
+                // não é mais dividido entre todas as fotos do lote).
+                $this->timeBudget->renew(self::SECONDS_PER_PHOTO);
+
+                $extension = strtolower($file->extension() ?: $file->getClientOriginalExtension());
+                $storedName = FileKeys::newName($extension);
+                $mimeType = $file->getMimeType();
 
                 [$width, $height] = @getimagesize($file->getRealPath()) ?: [null, null];
 
-                $watermarkedPath = $shouldWatermark
-                    ? $this->generateWatermarkedCopy($gallery, $path, $storedName)
-                    : null;
+                // 1) Todas as versões com UMA decodificação do original
+                //    (miniatura sem marca para o painel; versão e miniatura
+                //    com marca d'água para a galeria pública).
+                $variants = $this->watermarkService->galleryVariants(
+                    $file->get(),
+                    $extension,
+                    self::THUMBNAIL_MAX_DIMENSION,
+                    $shouldWatermark && $gallery->watermark_type === WatermarkType::Text ? $gallery->watermark_text : null,
+                    $shouldWatermark && $gallery->watermark_type === WatermarkType::Image ? $watermarkImage : null,
+                );
 
-                // Miniatura sem marca (painel interno) sempre é gerada;
-                // miniatura com marca (galeria pública) só faz sentido
-                // quando a galeria usa marca d'água — nesse caso é gerada a
-                // partir da cópia já watermarked (mais barato que aplicar a
-                // marca de novo numa imagem pequena).
-                $thumbnailPath = $this->generateThumbnail($path, $storedName, $gallery->id, 'thumbnails');
-                $watermarkedThumbnailPath = $watermarkedPath
-                    ? $this->generateThumbnail($watermarkedPath, $storedName, $gallery->id, 'watermarked-thumbnails')
-                    : null;
+                // 2) Original + versões geradas vão ao armazenamento juntos —
+                //    em paralelo no S3 (FileStorage::putMany). As keys entram
+                //    em $written ANTES do envio: se algo falhar no meio, a
+                //    limpeza também alcança as que chegaram a ser gravadas.
+                $path = FileKeys::gallery($gallery->id, FileKeys::GALLERY_ORIGINALS, $storedName);
+                $keys = ['path' => $path];
+                $writes = [['key' => $path, 'contents' => $file, 'mime' => $mimeType]];
+
+                foreach ([
+                    'watermarked_path' => [FileKeys::GALLERY_WATERMARKED, 'watermarked'],
+                    'thumbnail_path' => [FileKeys::GALLERY_THUMBNAILS, 'thumbnail'],
+                    'watermarked_thumbnail_path' => [FileKeys::GALLERY_WATERMARKED_THUMBNAILS, 'watermarked_thumbnail'],
+                ] as $column => [$variant, $version]) {
+                    $keys[$column] = null;
+
+                    if ($variants[$version] !== null) {
+                        $keys[$column] = FileKeys::gallery($gallery->id, $variant, $storedName);
+                        $writes[] = ['key' => $keys[$column], 'contents' => $variants[$version], 'mime' => $mimeType];
+                    }
+                }
+
+                unset($variants);
+                array_push($written, ...array_column($writes, 'key'));
+                $this->files->putMany($writes);
+                unset($writes);
 
                 $prepared[] = [
                     'original_name' => $file->getClientOriginalName(),
                     'stored_name' => $storedName,
-                    'path' => $path,
-                    'watermarked_path' => $watermarkedPath,
-                    'thumbnail_path' => $thumbnailPath,
-                    'watermarked_thumbnail_path' => $watermarkedThumbnailPath,
-                    'mime_type' => $file->getMimeType(),
+                    ...$keys,
+                    'mime_type' => $mimeType,
                     'size' => $file->getSize(),
                     'width' => $width,
                     'height' => $height,
@@ -175,13 +246,13 @@ class GalleryController extends Controller
 
                 return $created;
             });
+
+            $committed = true;
         } catch (\Throwable $e) {
-            // Nada foi salvo no banco: remove os arquivos já gravados para não
-            // deixar órfãos no disco.
-            Storage::disk(self::DISK)->delete(collect($prepared)
-                ->flatMap(fn ($data) => [$data['path'], $data['watermarked_path'], $data['thumbnail_path'], $data['watermarked_thumbnail_path']])
-                ->filter()
-                ->all());
+            // Nada foi salvo no banco: remove os objetos já gravados para não
+            // deixar órfãos no armazenamento.
+            $this->files->delete($written);
+            $written = [];
 
             throw $e;
         }
@@ -189,68 +260,56 @@ class GalleryController extends Controller
         return GalleryImageResource::collection(collect($images));
     }
 
-    private function generateWatermarkedCopy(Gallery $gallery, string $originalPath, string $storedName): ?string
+    private function watermarkImageBytes(Gallery $gallery): ?string
     {
-        $sourceFullPath = Storage::disk(self::DISK)->path($originalPath);
-        $watermarkedRelativePath = "galleries/{$gallery->id}/watermarked/{$storedName}";
-        $destFullPath = Storage::disk(self::DISK)->path($watermarkedRelativePath);
+        if ($gallery->watermark_type !== WatermarkType::Image || ! $gallery->watermark_image_path) {
+            return null;
+        }
 
-        $success = match ($gallery->watermark_type) {
-            WatermarkType::Text => $this->watermarkService->applyTextWatermark($sourceFullPath, $destFullPath, $gallery->watermark_text),
-            WatermarkType::Image => $gallery->watermark_image_path
-                ? $this->watermarkService->applyImageWatermark(
-                    $sourceFullPath,
-                    $destFullPath,
-                    Storage::disk(self::DISK)->path($gallery->watermark_image_path)
-                )
-                : false,
-            default => false,
-        };
-
-        return $success ? $watermarkedRelativePath : null;
+        try {
+            return $this->files->get($gallery->watermark_image_path);
+        } catch (StoredFileNotFoundException) {
+            // Mesmo comportamento de antes: sem a imagem, a foto fica sem
+            // versão com marca (a galeria pública cai no fluxo sem marca).
+            return null;
+        }
     }
 
-    private function generateThumbnail(string $sourcePath, string $storedName, int $galleryId, string $subfolder): ?string
-    {
-        $sourceFullPath = Storage::disk(self::DISK)->path($sourcePath);
-        $relativePath = "galleries/{$galleryId}/{$subfolder}/{$storedName}";
-        $destFullPath = Storage::disk(self::DISK)->path($relativePath);
-
-        return $this->watermarkService->resizeCopy($sourceFullPath, $destFullPath, self::THUMBNAIL_MAX_DIMENSION)
-            ? $relativePath
-            : null;
-    }
-
+    /**
+     * Exclusão definitiva de UMA foto (ação explícita do admin): remove o
+     * registro e todas as versões no armazenamento — original, miniaturas,
+     * marca d'água e prévia. Excluir a GALERIA inteira continua sendo soft
+     * delete e não apaga arquivos (regra existente).
+     */
     public function destroyImage(Gallery $gallery, GalleryImage $image): JsonResponse
     {
         abort_unless($image->gallery_id === $gallery->id, 404);
 
-        Storage::disk(self::DISK)->delete(array_filter([
+        $this->files->delete([
             $image->path,
             $image->watermarked_path,
             $image->thumbnail_path,
             $image->watermarked_thumbnail_path,
-            // Cópia ampliada leve da galeria pública (GalleryThumbnailService::ensurePreview).
-            $image->stored_name ? "galleries/{$gallery->id}/previews/{$image->stored_name}" : null,
-        ]));
+            // Prévia leve da galeria pública (GalleryThumbnailService::previewKey).
+            $image->stored_name ? FileKeys::gallery($gallery->id, FileKeys::GALLERY_PREVIEWS, $image->stored_name) : null,
+        ]);
         $image->delete();
 
         return response()->json(null, 204);
     }
 
-    
     public function uploadWatermarkImage(StoreGalleryWatermarkImageRequest $request, Gallery $gallery): JsonResponse
     {
+        /** @var UploadedFile $file */
         $file = $request->file('watermark_image');
-        $extension = $file->extension() ?: $file->getClientOriginalExtension();
-        $storedName = Str::uuid()->toString().'.'.$extension;
-        $path = $file->storeAs("galleries/{$gallery->id}/watermark-source", $storedName, self::DISK);
+        $extension = strtolower($file->extension() ?: $file->getClientOriginalExtension());
+        $path = FileKeys::gallery($gallery->id, FileKeys::GALLERY_WATERMARK_SOURCE, FileKeys::newName($extension));
 
-        if ($gallery->watermark_image_path) {
-            Storage::disk(self::DISK)->delete($gallery->watermark_image_path);
-        }
+        $this->files->putFile($path, $file, $file->getMimeType());
 
+        $previous = $gallery->watermark_image_path;
         $gallery->update(['watermark_image_path' => $path]);
+        $this->files->delete($previous);
 
         return response()->json([
             'message' => 'Imagem de marca d\'água enviada com sucesso.',
@@ -258,50 +317,49 @@ class GalleryController extends Controller
         ]);
     }
 
+    /** Original (sem marca) — só para a equipe autenticada; nunca vai para a galeria pública. */
     public function showImageFile(Gallery $gallery, GalleryImage $image): StreamedResponse
     {
         abort_unless($image->gallery_id === $gallery->id, 404);
-        abort_unless(Storage::disk(self::DISK)->exists($image->path), 404);
 
-        return Storage::disk(self::DISK)->response($image->path, $image->original_name, [
-            'Content-Type' => $image->mime_type,
-            // Arquivo imutável (nome UUID por upload): o navegador reaproveita
-            // a cópia em cache em vez de repetir a requisição ao PHP toda vez
-            // que a grade de fotos é montada.
-            'Cache-Control' => 'private, max-age=86400',
+        return $this->files->response($image->path, $image->original_name, $image->mime_type, [
+            'Cache-Control' => self::PRIVATE_CACHE,
         ]);
     }
 
     /**
      * Miniatura sem marca d'água (painel interno é sempre "a foto original,
-     * sem marca" — aqui só menor). Fotos enviadas antes da miniatura existir
-     * caem de volta pro arquivo original, sem quebrar a grade.
+     * sem marca" — aqui só menor). Fotos antigas sem miniatura ganham uma no
+     * primeiro acesso; se a geração falhar, cai no original.
      */
     public function showThumbnailFile(Gallery $gallery, GalleryImage $image, GalleryThumbnailService $thumbnails): StreamedResponse
     {
         abort_unless($image->gallery_id === $gallery->id, 404);
 
-        // Fotos sem miniatura (enviadas antes do recurso existir) ganham uma
-        // agora, no primeiro acesso — só cai no original se a geração falhar.
-        $servedPath = $thumbnails->ensureThumbnail($image) ?: $image->path;
+        $headers = ['Cache-Control' => self::PRIVATE_CACHE];
+        $key = $thumbnails->ensureThumbnail($image) ?: $image->path;
 
-        abort_unless(Storage::disk(self::DISK)->exists($servedPath), 404);
+        try {
+            return $this->files->response($key, $image->original_name, $image->mime_type, $headers);
+        } catch (StoredFileNotFoundException $e) {
+            // A key do banco aponta para um objeto que não existe mais:
+            // gera de novo uma vez (ou cai no original).
+            if ($key === $image->path) {
+                throw $e;
+            }
 
-        return Storage::disk(self::DISK)->response($servedPath, $image->original_name, [
-            'Content-Type' => $image->mime_type,
-            // Arquivo imutável (nome UUID por upload): o navegador reaproveita
-            // a cópia em cache em vez de repetir a requisição ao PHP toda vez
-            // que a grade de fotos é montada.
-            'Cache-Control' => 'private, max-age=86400',
-        ]);
+            $key = $thumbnails->regenerate($image, watermarked: false) ?: $image->path;
+
+            return $this->files->response($key, $image->original_name, $image->mime_type, $headers);
+        }
     }
 
-    
     public function showWatermarkImageFile(Gallery $gallery): StreamedResponse
     {
         abort_unless($gallery->watermark_image_path, 404);
-        abort_unless(Storage::disk(self::DISK)->exists($gallery->watermark_image_path), 404);
 
-        return Storage::disk(self::DISK)->response($gallery->watermark_image_path);
+        return $this->files->response($gallery->watermark_image_path, 'marca-dagua.'.pathinfo($gallery->watermark_image_path, PATHINFO_EXTENSION), headers: [
+            'Cache-Control' => self::PRIVATE_CACHE,
+        ]);
     }
 }

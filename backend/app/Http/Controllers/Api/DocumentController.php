@@ -18,20 +18,22 @@ use App\Models\DocumentSigner;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\DocumentConversionService;
-use App\Services\DocumentSignatureService;
+use App\Services\FileStorage;
+use App\Support\FileKeys;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DocumentController extends Controller
 {
-    private const DISK = DocumentSignatureService::DISK;
+    /** Todos os arquivos (original, PDF para assinatura) passam por aqui: disco local ou S3. */
+    public function __construct(private readonly FileStorage $files) {}
+
 
     /** Filtros da listagem → estados locais. */
     private const STATUS_GROUPS = [
@@ -148,7 +150,7 @@ class DocumentController extends Controller
             });
         } catch (\Throwable $e) {
             // Sem registro no banco, o arquivo ficaria órfão no disco.
-            Storage::disk(self::DISK)->delete($path);
+            $this->files->delete($path);
 
             throw $e;
         }
@@ -228,7 +230,7 @@ class DocumentController extends Controller
         $warning = null;
 
         if ($newPath) {
-            Storage::disk(self::DISK)->delete($oldFiles);
+            $this->files->delete($oldFiles);
             $warning = $newType->needsConversion() ? $this->convert($document, $request->user(), $converter) : null;
         }
 
@@ -279,20 +281,19 @@ class DocumentController extends Controller
 
     /**
      * Arquivo ORIGINAL (PDF ou DOCX, como foi enviado), servido pelo Laravel
-     * a partir do disco privado — o caminho físico nunca é exposto.
+     * a partir do armazenamento privado (local ou S3) depois da
+     * DocumentPolicy — a object key nunca é exposta.
      */
     public function file(Document $document): StreamedResponse
     {
         Gate::authorize('downloadFiles', $document);
 
-        abort_unless(Storage::disk(self::DISK)->exists($document->original_file_path), 404);
-
         $type = $document->original_file_type;
 
-        return Storage::disk(self::DISK)->response(
+        return $this->files->response(
             $document->original_file_path,
             $this->downloadName($document, 'original', $type->value),
-            ['Content-Type' => $type->mimeType()],
+            $type->mimeType(),
         );
     }
 
@@ -311,13 +312,7 @@ class DocumentController extends Controller
             return response()->json(['message' => 'O PDF para assinatura ainda não está disponível: a conversão do Word não foi concluída.'], 409);
         }
 
-        abort_unless(Storage::disk(self::DISK)->exists($path), 404);
-
-        return Storage::disk(self::DISK)->response(
-            $path,
-            $this->downloadName($document, 'para-assinatura'),
-            ['Content-Type' => 'application/pdf'],
-        );
+        return $this->files->response($path, $this->downloadName($document, 'para-assinatura'), 'application/pdf');
     }
 
     private function loadDetail(Document $document): Document
@@ -326,12 +321,15 @@ class DocumentController extends Controller
     }
 
     /**
-     * Nome no disco é um UUID gerado aqui — o nome enviado pelo usuário
-     * nunca vira caminho.
+     * Object key com UUID gerado aqui (documents/original/{uuid}.pdf|docx) —
+     * o nome enviado pelo usuário nunca vira caminho.
      */
     private function storeFile(UploadedFile $file, DocumentFileType $type): string
     {
-        return $file->storeAs('documents', Str::uuid().'.'.$type->value, self::DISK);
+        $key = FileKeys::documentOriginal($type->value);
+        $this->files->putFile($key, $file, $type->mimeType());
+
+        return $key;
     }
 
     /** Nome original só para exibição, reduzido a caracteres seguros. */
@@ -354,7 +352,7 @@ class DocumentController extends Controller
      */
     private function convert(Document $document, User $user, DocumentConversionService $converter): ?string
     {
-        $target = 'documents/'.Str::uuid().'.pdf';
+        $target = FileKeys::documentSigning();
 
         try {
             $size = $converter->convertToPdf($document->original_file_path, $target);
@@ -374,7 +372,7 @@ class DocumentController extends Controller
         ])->save();
 
         if ($previous && $previous !== $target) {
-            Storage::disk(self::DISK)->delete($previous);
+            $this->files->delete($previous);
         }
 
         $document->recordEvent(DocumentEventType::FileConverted, 'Documento Word convertido para PDF. Confira o PDF antes de enviar para assinatura.', user: $user);

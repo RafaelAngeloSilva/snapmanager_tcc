@@ -44,6 +44,12 @@ class GalleryExpirationTest extends TestCase
 
     public function test_expiration_is_stored_as_the_exact_instant_chosen(): void
     {
+        // Relógio congelado ANTES da expiração escolhida (12:00 em Brasília),
+        // para o teste não depender da data real: sem isso, depois de
+        // 01/10/2026 a validação (corretamente) recusa a data como passada.
+        // O Laravel restaura o relógio real ao fim de cada teste.
+        $this->travelTo(Carbon::parse('2026-10-01 12:00:00', 'America/Sao_Paulo'));
+
         // 18:00 em Brasília (offset -03:00) = 21:00 UTC.
         $response = $this->postJson('/api/galleries', $this->payload(['expires_at' => '2026-10-01T18:00:00.000-03:00']))
             ->assertCreated();

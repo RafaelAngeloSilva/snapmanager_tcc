@@ -200,8 +200,8 @@ class DocxConversionTest extends TestCase
 
         // Três conceitos separados: original DOCX, PDF para assinatura, (assinado depois).
         $this->assertSame(DocumentFileType::Docx, $document->original_file_type);
-        $this->assertMatchesRegularExpression('#^documents/[0-9a-f-]{36}\.docx$#', $document->original_file_path);
-        $this->assertMatchesRegularExpression('#^documents/[0-9a-f-]{36}\.pdf$#', $document->signing_file_path);
+        $this->assertMatchesRegularExpression('#^documents/original/[0-9a-f-]{36}\.docx$#', $document->original_file_path);
+        $this->assertMatchesRegularExpression('#^documents/signing/[0-9a-f-]{36}\.pdf$#', $document->signing_file_path);
         Storage::disk('local')->assertExists([$document->original_file_path, $document->signing_file_path]);
         $this->assertStringStartsWith('PK', Storage::disk('local')->get($document->original_file_path));
         $this->assertSame(self::CONVERTED_PDF, Storage::disk('local')->get($document->signing_file_path));

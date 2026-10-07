@@ -9,6 +9,23 @@ import styles from './GalleryUploadModal.module.css';
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE_BYTES = 10 * 1024 * 1024;
 
+/**
+ * Mensagem amigável para a falha de UMA foto. Nunca mostra detalhes
+ * técnicos (bucket, AWS, caminhos) — esses ficam só no log do servidor.
+ */
+function describeUploadError(err) {
+  const status = err.response?.status;
+
+  if (status === 422) {
+    return Object.values(err.response.data.errors || {}).flat().join(' ') || 'arquivo recusado pela validação.';
+  }
+
+  if (status === 413) return 'arquivo grande demais para o servidor.';
+  if (!err.response) return 'sem resposta do servidor.';
+
+  return 'erro no servidor.';
+}
+
 function formatSize(bytes) {
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -19,6 +36,8 @@ export default function GalleryUploadModal({ isOpen, gallery, onClose, onUploade
   const [previews, setPreviews] = useState({});
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState(0);
+  // Foto sendo enviada agora (1..total), para o texto "Enviando foto X de N".
+  const [current, setCurrent] = useState({ index: 0, total: 0 });
   const [error, setError] = useState('');
   const [localWarnings, setLocalWarnings] = useState([]);
   const inputRef = useRef(null);
@@ -69,37 +88,69 @@ export default function GalleryUploadModal({ isOpen, gallery, onClose, onUploade
     setPending((prev) => prev.filter((_, i) => i !== index));
   }
 
+  /**
+   * Envia UMA foto por requisição, em sequência.
+   *
+   * Antes o lote inteiro ia numa requisição só: com o armazenamento no S3,
+   * o servidor processava e enviava todas as fotos (original + 3 versões
+   * cada) dentro do mesmo limite de tempo do PHP e estourava no meio do
+   * lote. Uma por vez, cada requisição é curta, o progresso é real e uma
+   * falha não derruba as outras: as fotos enviadas ficam salvas e só as que
+   * falharam continuam na lista, prontas para reenviar.
+   */
   async function handleUpload() {
-    if (pending.length === 0) return;
+    if (pending.length === 0 || isUploading) return;
+
+    const queue = [...pending];
+    const failed = [];
+    const reasons = [];
+    let uploadedCount = 0;
 
     setIsUploading(true);
     setError('');
     setProgress(0);
 
     try {
-      const uploaded = await uploadGalleryImages(gallery.id, pending, (event) => {
-        if (event.total) setProgress(Math.round((event.loaded / event.total) * 100));
-      });
+      for (let index = 0; index < queue.length; index += 1) {
+        const file = queue[index];
+        setCurrent({ index: index + 1, total: queue.length });
 
-      onUploaded(uploaded);
-      setPending([]);
-    } catch (err) {
-      const status = err.response?.status;
+        try {
+          await uploadGalleryImages(gallery.id, [file], (event) => {
+            // O envio do arquivo é ~90% da etapa; o resto é o processamento no servidor.
+            const sent = event.total ? event.loaded / event.total : 0;
+            setProgress(Math.round(((index + sent * 0.9) / queue.length) * 100));
+          });
+          uploadedCount += 1;
+        } catch (err) {
+          failed.push(file);
+          reasons.push(`${file.name}: ${describeUploadError(err)}`);
+        }
 
-      if (status === 422) {
-        const messages = Object.values(err.response.data.errors || {})
-          .flat()
-          .join(' ');
-        setError(messages || 'Não foi possível enviar as fotos.');
-      } else if (status === 413) {
-        setError(
-          'O lote de fotos é grande demais para enviar de uma vez. Tente enviar menos fotos por vez (ex.: 5 a 10).',
-        );
-      } else {
-        setError('Não foi possível enviar as fotos. Tente novamente.');
+        setProgress(Math.round(((index + 1) / queue.length) * 100));
       }
     } finally {
       setIsUploading(false);
+      setCurrent({ index: 0, total: 0 });
+    }
+
+    if (failed.length === 0) {
+      setPending([]);
+      onUploaded();
+
+      return;
+    }
+
+    setPending(failed);
+
+    if (uploadedCount > 0) {
+      // Atualiza a galeria por trás sem fechar o modal (as que falharam continuam aqui).
+      onUploaded({ keepOpen: true });
+      setError(
+        `${uploadedCount} de ${queue.length} foto(s) enviadas. ${failed.length} não puderam ser enviadas e continuam abaixo para tentar de novo — ${reasons.join(' ')}`,
+      );
+    } else {
+      setError(`Não foi possível enviar as fotos. Tente novamente. ${reasons.join(' ')}`.trim());
     }
   }
 
@@ -149,9 +200,16 @@ export default function GalleryUploadModal({ isOpen, gallery, onClose, onUploade
         {error && <div className={styles.error}>{error}</div>}
 
         {isUploading && (
-          <div className={styles.progressBar}>
-            <div className={styles.progressFill} style={{ width: `${progress}%` }} />
-          </div>
+          <>
+            <div className={styles.progressBar}>
+              <div className={styles.progressFill} style={{ width: `${progress}%` }} />
+            </div>
+            {current.total > 0 && (
+              <p className={styles.progressText} role="status">
+                Enviando foto {current.index} de {current.total}…
+              </p>
+            )}
+          </>
         )}
 
         {pending.length > 0 && (
