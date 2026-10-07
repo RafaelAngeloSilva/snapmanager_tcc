@@ -3,11 +3,12 @@
 namespace App\Services;
 
 use App\Exceptions\DocumentConversionException;
+use App\Exceptions\StorageUnavailableException;
+use App\Exceptions\StoredFileNotFoundException;
 use Illuminate\Process\Exceptions\ProcessTimedOutException;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Process;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Symfony\Component\Process\ExecutableFinder;
 use Throwable;
@@ -34,7 +35,7 @@ use Throwable;
  */
 class DocumentConversionService
 {
-    public const DISK = 'local';
+    public function __construct(private readonly FileStorage $files) {}
 
     /** Nome fixo da cópia de trabalho: o nome enviado pelo usuário nunca vira argumento. */
     private const WORK_FILE = 'document.docx';
@@ -45,8 +46,14 @@ class DocumentConversionService
     }
 
     /**
-     * Converte o DOCX em `$sourcePath` (disco privado) e grava o PDF em
-     * `$targetPath` (disco privado). Devolve o tamanho do PDF, em bytes.
+     * Converte o DOCX guardado em `$sourcePath` e grava o PDF em
+     * `$targetPath` — ambos OBJECT KEYS do armazenamento persistente (disco
+     * local ou S3, via FileStorage). O LibreOffice nunca recebe uma URL:
+     *
+     *   armazenamento → cópia no diretório temporário isolado → LibreOffice
+     *   → PDF temporário → validação → armazenamento → limpeza (finally).
+     *
+     * Devolve o tamanho do PDF, em bytes.
      *
      * @throws DocumentConversionException
      */
@@ -71,7 +78,9 @@ class DocumentConversionService
             File::ensureDirectoryExists($profileDir.DIRECTORY_SEPARATOR.'user');
 
             $input = $inDir.DIRECTORY_SEPARATOR.self::WORK_FILE;
-            File::put($input, Storage::disk(self::DISK)->get($sourcePath));
+            // Baixa o DOCX do armazenamento (S3 ou local) para a área de
+            // trabalho isolada desta conversão.
+            File::put($input, $this->files->get($sourcePath));
             File::put($profileDir.DIRECTORY_SEPARATOR.'user'.DIRECTORY_SEPARATOR.'registrymodifications.xcu', $this->hardenedProfile());
 
             $result = Process::path($workDir)
@@ -120,14 +129,16 @@ class DocumentConversionService
                 throw DocumentConversionException::failed();
             }
 
-            Storage::disk(self::DISK)->put($targetPath, $pdf);
+            $this->files->put($targetPath, $pdf, 'application/pdf');
 
             return strlen($pdf);
         } catch (ProcessTimedOutException) {
             Log::warning('Conversão DOCX → PDF excedeu o tempo limite.', ['timeout' => $this->timeout()]);
 
             throw DocumentConversionException::timeout();
-        } catch (DocumentConversionException $e) {
+        } catch (DocumentConversionException|StorageUnavailableException|StoredFileNotFoundException $e) {
+            // Falha do armazenamento: já registrada (sanitizada) pelo
+            // FileStorage e com mensagem própria para o usuário.
             throw $e;
         } catch (Throwable $e) {
             // Ex.: falha ao iniciar o processo, disco cheio. Só a classe vai
@@ -163,6 +174,11 @@ class DocumentConversionService
         return max(10, (int) config('services.document_converter.timeout', 90));
     }
 
+    /**
+     * Raiz dos diretórios de trabalho TEMPORÁRIOS (apagados ao fim de cada
+     * conversão). No Railway é o disco efêmero do container — nada
+     * persistente fica aqui.
+     */
     private function tempRoot(): string
     {
         $configured = trim((string) config('services.document_converter.temp_path', ''));

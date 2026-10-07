@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\URL;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -59,16 +59,28 @@ class User extends Authenticatable
     }
 
     /**
-     * URL pública pronta para o front-end usar direto num <img src>. Foto
-     * fica no disco "public" (storage/app/public, link simbólico em
-     * public/storage via "php artisan storage:link") — só o caminho é
-     * guardado no banco, nunca o arquivo em si.
+     * URL pronta para o front-end usar direto num <img src>.
+     *
+     * A foto fica no armazenamento persistente (local ou S3 privado, via
+     * FileStorage) e é servida pelo Laravel numa rota com ASSINATURA
+     * temporária (ProfilePhotoController) — um <img> não envia o token de
+     * login, e o bucket nunca é público. A URL:
+     *   - vale ~24 h e é estável dentro da mesma hora (o navegador reaproveita
+     *     o cache em vez de baixar a foto a cada tela);
+     *   - muda quando a foto muda (parâmetro "v", derivado da object key);
+     *   - é assinada só sobre o caminho (signed:relative), então funciona
+     *     atrás do proxy HTTPS do Railway sem depender do esquema/host.
      */
     protected function profilePhotoUrl(): Attribute
     {
         return Attribute::make(
             get: fn () => $this->profile_photo_path
-                ? Storage::disk('public')->url($this->profile_photo_path)
+                ? url(URL::temporarySignedRoute(
+                    'profile-photos.show',
+                    now()->startOfHour()->addHours(25),
+                    ['user' => $this->getKey(), 'v' => substr(sha1($this->profile_photo_path), 0, 10)],
+                    absolute: false,
+                ))
                 : null,
         );
     }

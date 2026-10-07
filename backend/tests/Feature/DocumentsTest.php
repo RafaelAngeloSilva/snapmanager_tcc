@@ -308,7 +308,7 @@ class DocumentsTest extends TestCase
 
         Storage::disk('local')->assertExists($document->original_file_path);
         // Nome no disco é gerado (UUID), não o nome enviado; e o caminho não vaza.
-        $this->assertMatchesRegularExpression('#^documents/[0-9a-f-]{36}\.pdf$#', $document->original_file_path);
+        $this->assertMatchesRegularExpression('#^documents/original/[0-9a-f-]{36}\.pdf$#', $document->original_file_path);
         $this->assertStringNotContainsString($document->original_file_path, $response->getContent());
         // Nenhuma chamada à Clicksign ao salvar.
         Http::assertNothingSent();

@@ -19,6 +19,9 @@ class ProfileTest extends TestCase
         parent::setUp();
 
         Storage::fake('public');
+        // Fotos de perfil agora vão para o armazenamento persistente do
+        // SnapManager (disco "local" nos testes; S3 em produção).
+        Storage::fake('local');
     }
 
     public function test_unauthenticated_request_is_rejected_with_401(): void

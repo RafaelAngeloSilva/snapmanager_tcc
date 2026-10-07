@@ -32,5 +32,30 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <!-- Isolamento do .env do desenvolvedor: force="true" vence o .env e o
+             ambiente do sistema. Nenhum teste lê credencial real nem fala com a
+             AWS, a Clicksign ou o LibreOffice instalado; testes que precisam de
+             S3/Clicksign/LibreOffice configuram (e falsificam) isso por conta própria. -->
+        <env name="APP_URL" value="http://localhost" force="true"/>
+        <env name="FRONTEND_URL" value="http://localhost:5173" force="true"/>
+        <env name="FILESYSTEM_DISK" value="local" force="true"/>
+        <env name="SNAPMANAGER_FILESYSTEM_DISK" value="local" force="true"/>
+        <env name="AWS_ACCESS_KEY_ID" value="phpunit-sem-credencial" force="true"/>
+        <env name="AWS_SECRET_ACCESS_KEY" value="phpunit-sem-credencial" force="true"/>
+        <env name="AWS_DEFAULT_REGION" value="us-east-1" force="true"/>
+        <env name="AWS_BUCKET" value="phpunit-sem-bucket" force="true"/>
+        <env name="AWS_URL" value="" force="true"/>
+        <!-- Se algum teste esquecer o fake do S3, a requisição falha aqui (porta
+             local fechada) em vez de chegar à AWS. -->
+        <env name="AWS_ENDPOINT" value="http://127.0.0.1:9" force="true"/>
+        <env name="AWS_USE_PATH_STYLE_ENDPOINT" value="true" force="true"/>
+        <env name="CLICKSIGN_BASE_URL" value="https://sandbox.clicksign.com/api/v3" force="true"/>
+        <env name="CLICKSIGN_ACCESS_TOKEN" value="" force="true"/>
+        <env name="CLICKSIGN_WEBHOOK_SECRET" value="" force="true"/>
+        <env name="GOOGLE_CLIENT_ID" value="" force="true"/>
+        <env name="GOOGLE_CLIENT_SECRET" value="" force="true"/>
+        <env name="GOOGLE_REDIRECT_URI" value="" force="true"/>
+        <env name="DOCUMENT_CONVERTER_BINARY" value="/phpunit/sem-libreoffice/soffice" force="true"/>
+        <env name="DOCUMENT_CONVERTER_TEMP_PATH" value="" force="true"/>
     </php>
 </phpunit>

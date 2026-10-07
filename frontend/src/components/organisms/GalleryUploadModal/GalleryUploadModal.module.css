@@ -113,3 +113,9 @@
   font-size: 0.65rem;
   text-align: center;
 }
+
+.progressText {
+  margin: 0.4rem 0 0;
+  font-size: 0.82rem;
+  color: var(--color-text-secondary);
+}

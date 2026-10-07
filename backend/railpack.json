@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schema.railpack.com",
+  "deploy": {
+    "aptPackages": [
+      "libreoffice-writer-nogui",
+      "fonts-crosextra-carlito",
+      "fonts-crosextra-caladea",
+      "fonts-liberation"
+    ],
+    "variables": {
+      "RAILPACK_SKIP_MIGRATIONS": "true"
+    }
+  }
+}

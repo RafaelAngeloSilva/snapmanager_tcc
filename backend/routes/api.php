@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\KanbanTaskController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\OrderTrackingController;
 use App\Http\Controllers\Api\ProfileController;
+use App\Http\Controllers\Api\ProfilePhotoController;
 use App\Http\Controllers\Api\PublicGalleryController;
 use App\Http\Controllers\Api\PublicOrderTrackingController;
 use App\Http\Controllers\Api\UserController;
@@ -43,6 +44,17 @@ Route::prefix('public/galleries/{gallery:access_token}')->group(function () {
 Route::get('/public/tracking/{token}', [PublicOrderTrackingController::class, 'show'])
     ->where('token', '[A-Za-z0-9]{20,64}')
     ->middleware('throttle:60,1');
+
+/*
+| Foto de perfil — usada em <img src>, que não envia o token de login. A
+| proteção é a ASSINATURA da URL (gerada em User::profile_photo_url para
+| quem já está autenticado), validada só sobre o caminho (signed:relative)
+| para funcionar atrás do proxy HTTPS da hospedagem.
+*/
+Route::get('/files/profile-photos/{user}', [ProfilePhotoController::class, 'show'])
+    ->whereNumber('user')
+    ->middleware(['signed:relative', 'throttle:240,1'])
+    ->name('profile-photos.show');
 
 /*
 | Webhook da Clicksign — chamado pela Clicksign, não por um usuário logado,

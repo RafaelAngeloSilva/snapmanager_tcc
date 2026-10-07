@@ -114,10 +114,15 @@ export default function Galleries() {
     load(meta.current_page, currentFilters());
   }
 
-  function handleUploaded() {
-    setUploadModal({ isOpen: false, gallery: null });
+  // `keepOpen`: parte das fotos foi enviada e parte falhou — atualiza a
+  // lista (contagem de fotos) e mantém o modal aberto com as que faltam.
+  function handleUploaded({ keepOpen = false } = {}) {
+    if (!keepOpen) {
+      setUploadModal({ isOpen: false, gallery: null });
+      showToast('Fotos enviadas com sucesso!');
+    }
+
     load(meta.current_page, currentFilters());
-    showToast('Fotos enviadas com sucesso!');
   }
 
   function handleClosed() {

@@ -9,12 +9,14 @@ use App\Enums\DocumentSignerStatus;
 use App\Enums\DocumentStatus;
 use App\Exceptions\ClicksignException;
 use App\Exceptions\DocumentActionException;
+use App\Exceptions\StorageUnavailableException;
+use App\Exceptions\StoredFileNotFoundException;
 use App\Models\Document;
 use App\Models\DocumentSigner;
 use App\Models\User;
+use App\Support\FileKeys;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
@@ -35,12 +37,14 @@ use Illuminate\Support\Str;
  */
 class DocumentSignatureService
 {
-    public const DISK = 'local';
 
     /** Intervalo mínimo entre duas notificações — evita envio duplicado por clique repetido. */
     public const NOTIFY_COOLDOWN_SECONDS = 60;
 
-    public function __construct(private readonly ClicksignService $clicksign) {}
+    public function __construct(
+        private readonly ClicksignService $clicksign,
+        private readonly FileStorage $files,
+    ) {}
 
     /*
     |--------------------------------------------------------------------------
@@ -78,7 +82,7 @@ class DocumentSignatureService
                 throw new DocumentActionException('O documento Word ainda não foi convertido para PDF. Converta e confira o PDF antes de enviar.', 422);
             }
 
-            if (! Storage::disk(self::DISK)->exists($locked->signingFilePath())) {
+            if (! $this->files->exists($locked->signingFilePath())) {
                 throw new DocumentActionException('O arquivo do contrato não foi encontrado. Envie o arquivo novamente.', 422);
             }
 
@@ -92,6 +96,21 @@ class DocumentSignatureService
         $document->refresh()->load('signers');
         $step = null;
 
+        // O PDF é lido do armazenamento (local ou S3) ANTES de qualquer
+        // chamada à Clicksign: se o armazenamento falhar, nenhum envelope é
+        // criado e o documento volta a rascunho, pronto para tentar de novo.
+        try {
+            $signingPdf = $this->files->get($document->signingFilePath());
+        } catch (StoredFileNotFoundException|StorageUnavailableException $e) {
+            $document->forceFill(['status' => DocumentStatus::Draft])->save();
+
+            if ($e instanceof StoredFileNotFoundException) {
+                throw new DocumentActionException('O arquivo do contrato não foi encontrado. Envie o arquivo novamente.', 422);
+            }
+
+            throw $e;
+        }
+
         try {
             $step = 'criar envelope';
             $envelope = $this->clicksign->createEnvelope($this->envelopeName($document), $this->envelopeAttributes($document));
@@ -101,7 +120,7 @@ class DocumentSignatureService
             $remoteDocument = $this->clicksign->addDocument(
                 $document->clicksign_envelope_id,
                 $this->remoteFilename($document),
-                Storage::disk(self::DISK)->get($document->signingFilePath()),
+                $signingPdf,
             );
             $document->forceFill(['clicksign_document_id' => $remoteDocument['id']])->save();
 
@@ -566,8 +585,8 @@ class DocumentSignatureService
     */
 
     /**
-     * Caminho (no disco privado) do PDF assinado. Na primeira vez, baixa da
-     * Clicksign e guarda uma cópia local — os links da API expiram em
+     * Object key do PDF assinado. Na primeira vez, baixa da Clicksign e
+     * guarda uma cópia no armazenamento persistente (local ou S3) — os links da API expiram em
      * minutos, e a cópia evita depender da Clicksign a cada download.
      *
      * @throws DocumentActionException
@@ -579,7 +598,7 @@ class DocumentSignatureService
             throw new DocumentActionException('O documento assinado só fica disponível depois que todas as assinaturas forem concluídas.');
         }
 
-        if ($document->signed_file_path && Storage::disk(self::DISK)->exists($document->signed_file_path)) {
+        if ($document->signed_file_path && $this->files->exists($document->signed_file_path)) {
             return $document->signed_file_path;
         }
 
@@ -596,8 +615,8 @@ class DocumentSignatureService
             throw new DocumentActionException('O arquivo recebido da Clicksign não é um PDF válido.', 502);
         }
 
-        $path = "documents/{$document->id}/signed-".Str::uuid().'.pdf';
-        Storage::disk(self::DISK)->put($path, $contents);
+        $path = FileKeys::documentSigned();
+        $this->files->put($path, $contents, 'application/pdf');
 
         $document->forceFill(['signed_file_path' => $path])->save();
         $document->recordEvent(DocumentEventType::SignedFileStored, 'Cópia do documento assinado baixada da Clicksign e armazenada.', dedupeKey: 'signed_file_stored');

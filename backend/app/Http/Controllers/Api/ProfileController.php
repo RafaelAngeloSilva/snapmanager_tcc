@@ -7,9 +7,10 @@ use App\Http\Requests\StoreProfilePhotoRequest;
 use App\Http\Requests\UpdateProfilePasswordRequest;
 use App\Http\Requests\UpdateProfileRequest;
 use App\Models\User;
+use App\Services\FileStorage;
+use App\Support\FileKeys;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 /**
  * Autoatendimento do próprio perfil — sem relação com o CRUD administrativo
@@ -19,7 +20,7 @@ use Illuminate\Support\Str;
  */
 class ProfileController extends Controller
 {
-    private const DISK = 'public';
+    public function __construct(private readonly FileStorage $files) {}
 
     public function show(): JsonResponse
     {
@@ -46,14 +47,14 @@ class ProfileController extends Controller
         $user = $request->user();
         $file = $request->file('photo');
 
-        $storedName = Str::uuid()->toString().'.'.($file->extension() ?: $file->getClientOriginalExtension());
-        $path = $file->storeAs('profile-photos', $storedName, self::DISK);
+        // Armazenamento persistente (local ou S3) — não mais o disco
+        // "public" do servidor, que no Railway seria perdido a cada deploy.
+        $path = FileKeys::profilePhoto($file->extension() ?: $file->getClientOriginalExtension());
+        $this->files->putFile($path, $file, $file->getMimeType());
 
-        if ($user->profile_photo_path) {
-            Storage::disk(self::DISK)->delete($user->profile_photo_path);
-        }
-
+        $previous = $user->profile_photo_path;
         $user->update(['profile_photo_path' => $path]);
+        $this->deletePhoto($previous);
 
         return response()->json($this->present($user));
     }
@@ -63,11 +64,26 @@ class ProfileController extends Controller
         $user = request()->user();
 
         if ($user->profile_photo_path) {
-            Storage::disk(self::DISK)->delete($user->profile_photo_path);
+            $previous = $user->profile_photo_path;
             $user->update(['profile_photo_path' => null]);
+            $this->deletePhoto($previous);
         }
 
         return response()->json($this->present($user));
+    }
+
+    /**
+     * Remove a foto antiga do armazenamento atual e, se ela ainda for do
+     * formato antigo, também do disco "public" legado.
+     */
+    private function deletePhoto(?string $path): void
+    {
+        if (! $path) {
+            return;
+        }
+
+        $this->files->delete($path);
+        Storage::disk(config('filesystems.snapmanager.legacy_profile_photo_disk', 'public'))->delete($path);
     }
 
     /**

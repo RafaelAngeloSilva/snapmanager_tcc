@@ -59,8 +59,10 @@ export default function GalleryDetailsModal({ isOpen, galleryId, onClose, onEdit
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, galleryId]);
 
-  function handleUploaded() {
-    setIsUploadOpen(false);
+  // `keepOpen`: parte das fotos foi enviada e parte falhou — atualiza a grade
+  // mas deixa o modal de upload aberto com as que faltam.
+  function handleUploaded({ keepOpen = false } = {}) {
+    if (!keepOpen) setIsUploadOpen(false);
     load();
     onChanged?.();
   }
