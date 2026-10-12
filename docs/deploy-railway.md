@@ -279,6 +279,21 @@ Depois: `Starting Laravel server ...`.
    login, upload de fotos numa galeria, upload de um contrato .docx (deve
    converter para PDF).
 
+### 4.7 Primeiro administrador
+O banco de produção não recebe os dados de demonstração (seeders). O quadro de
+Produção já nasce com as colunas padrão (migration
+`seed_default_kanban_columns`), mas **toda conta criada pelo site ou pelo Google
+é de atendimento**. Galerias, colunas do quadro e exclusões são só do
+administrador. Depois de criar a sua conta, promova-a pelo terminal do
+serviço (`railway ssh`):
+
+```bash
+php artisan users:set-role seu-email@exemplo.com admin
+```
+
+O mesmo comando muda qualquer conta para `attendant`, `photographer` ou
+`editor`.
+
 ---
 
 ## 5. Como cada requisito de produção ficou

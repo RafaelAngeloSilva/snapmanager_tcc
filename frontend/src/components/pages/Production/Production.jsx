@@ -198,7 +198,11 @@ export default function Production() {
         <Card>
           <EmptyState
             title="Nenhuma coluna no quadro"
-            message="Crie a primeira coluna para começar a organizar a produção."
+            message={
+              canManageColumns
+                ? 'Crie a primeira coluna para começar a organizar a produção.'
+                : 'Um administrador precisa criar as colunas do quadro antes de começar.'
+            }
             action={
               canManageColumns ? (
                 <Button onClick={() => setColumnForm({ isOpen: true, column: null })}>Nova coluna</Button>

@@ -178,11 +178,13 @@ class KanbanTaskController extends Controller
 
     /**
      * 409 com o card existente no corpo: o front-end usa isso para oferecer
-     * "Ver no Kanban" em vez de criar uma duplicata.
+     * "Ver no Kanban" em vez de criar uma duplicata. O `code` separa este
+     * 409 do de "quadro sem colunas" (missingColumn).
      */
     private function alreadyOnBoard(KanbanTask $task, string $message): JsonResponse
     {
         return response()->json([
+            'code' => 'already_on_board',
             'message' => $message,
             'data' => KanbanTaskResource::make($task->load(self::CARD_RELATIONS)),
         ], 409);
@@ -191,7 +193,8 @@ class KanbanTaskController extends Controller
     private function missingColumn(): JsonResponse
     {
         return response()->json([
-            'message' => 'O quadro de produção ainda não possui colunas. Crie uma coluna antes de adicionar tarefas.',
+            'code' => 'no_columns',
+            'message' => 'O quadro de produção ainda não possui colunas. Um administrador precisa criar uma coluna antes.',
         ], 409);
     }
 }

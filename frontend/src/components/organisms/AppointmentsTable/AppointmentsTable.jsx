@@ -69,12 +69,16 @@ export default function AppointmentsTable({ appointments, onView, onEdit, onDele
                     <BoardIcon />
                   </Button>
                 )}
-                <Button variant="ghost" size="icon" onClick={() => onEdit(appointment)} aria-label={`Editar ${appointment.title}`}>
-                  <EditIcon />
-                </Button>
-                <Button variant="ghost" size="icon" onClick={() => onDelete(appointment)} aria-label={`Excluir ${appointment.title}`}>
-                  <TrashIcon />
-                </Button>
+                {can('appointments.manage') && (
+                  <>
+                    <Button variant="ghost" size="icon" onClick={() => onEdit(appointment)} aria-label={`Editar ${appointment.title}`}>
+                      <EditIcon />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => onDelete(appointment)} aria-label={`Excluir ${appointment.title}`}>
+                      <TrashIcon />
+                    </Button>
+                  </>
+                )}
               </div>
             </TableCell>
           </TableRow>

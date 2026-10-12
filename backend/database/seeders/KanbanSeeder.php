@@ -22,6 +22,10 @@ class KanbanSeeder extends Seeder
         $photographer = User::where('email', 'fotografo@snapmanager.test')->first();
         $editor = User::where('email', 'editor@snapmanager.test')->first();
 
+        // A migration de colunas padrão já criou um quadro básico; a
+        // demonstração usa o próprio conjunto de colunas no lugar dele.
+        KanbanColumn::query()->delete();
+
         $columns = collect(['Agendado', 'A fazer', 'Em andamento', 'Em revisão', 'Concluído'])
             ->map(fn (string $name, int $index) => KanbanColumn::create([
                 'name' => $name,
