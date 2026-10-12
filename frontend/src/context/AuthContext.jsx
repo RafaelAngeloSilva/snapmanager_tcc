@@ -8,11 +8,14 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem(TOKEN_STORAGE_KEY));
   const [user, setUser] = useState(null);
+  const [userLoadFailed, setUserLoadFailed] = useState(false);
 
-  // Após um F5 a página recarrega com token salvo mas sem os dados do
-  // usuário em memória: busca o perfil para preencher nome/role na sidebar.
+  // Após um F5 (ou o login com Google) a página tem o token salvo mas ainda
+  // não os dados do usuário: busca o perfil para saber nome e perfil (role).
+  // Enquanto isso, isUserLoading=true — as rotas com permissão ESPERAM em
+  // vez de concluir "sem permissão" e redirecionar.
   useEffect(() => {
-    if (!token || user) {
+    if (!token || user || userLoadFailed) {
       return;
     }
 
@@ -21,9 +24,11 @@ export function AuthProvider({ children }) {
       .then(setUser)
       .catch(() => {
         // 401 já é tratado globalmente pelo interceptor do axios (redireciona
-        // para /login); outros erros aqui não travam a UI.
+        // para /login). Outros erros (rede, servidor fora do ar) liberam a
+        // tela com a opção de tentar de novo.
+        setUserLoadFailed(true);
       });
-  }, [token, user]);
+  }, [token, user, userLoadFailed]);
 
   async function login(email, password) {
     const data = await authApi.login(email, password);
@@ -63,6 +68,7 @@ export function AuthProvider({ children }) {
       localStorage.removeItem(TOKEN_STORAGE_KEY);
       setToken(null);
       setUser(null);
+      setUserLoadFailed(false);
     }
   }
 
@@ -77,6 +83,9 @@ export function AuthProvider({ children }) {
       token,
       user,
       isAuthenticated: Boolean(token),
+      isUserLoading: Boolean(token && !user && !userLoadFailed),
+      userLoadFailed: Boolean(token && !user && userLoadFailed),
+      retryLoadUser: () => setUserLoadFailed(false),
       login,
       register,
       loginWithToken,
@@ -88,7 +97,7 @@ export function AuthProvider({ children }) {
       can: (permission) => Boolean(user && roleCan(user.role, permission)),
       hasRole: (...roles) => Boolean(user && roles.includes(user.role)),
     }),
-    [token, user],
+    [token, user, userLoadFailed],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

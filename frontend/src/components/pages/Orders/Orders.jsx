@@ -15,8 +15,10 @@ import OrderDetailsModal from '../../organisms/OrderDetailsModal';
 import UpdateOrderStatusModal from '../../organisms/UpdateOrderStatusModal';
 import DeleteOrderDialog from '../../organisms/DeleteOrderDialog';
 import styles from './Orders.module.css';
+import { useAuth } from '../../../context/AuthContext';
 
 export default function Orders() {
+  const { can } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -76,7 +78,14 @@ export default function Orders() {
       await addOrderToBoard(order.id);
       setBoardNotice({ tone: 'success', message: `"${order.title}" foi adicionado ao quadro de Produção.` });
     } catch (err) {
-      if (err.response?.status === 409) {
+      if (err.response?.status === 409 && err.response.data?.code === 'no_columns') {
+        setBoardNotice({
+          tone: 'error',
+          message: can('kanban.manageColumns')
+            ? 'O quadro de Produção ainda não tem colunas. Crie uma coluna na tela de Produção e tente de novo.'
+            : 'O quadro de Produção ainda não tem colunas. Peça a um administrador para criar as colunas.',
+        });
+      } else if (err.response?.status === 409) {
         setBoardNotice({ tone: 'info', message: `"${order.title}" já está no quadro de Produção.` });
       } else if (err.response?.status === 403) {
         setBoardNotice({ tone: 'error', message: 'Você não tem permissão para adicionar pedidos ao quadro.' });
@@ -212,7 +221,7 @@ export default function Orders() {
             <EmptyState
               title="Nenhum pedido cadastrado"
               message="Comece criando o primeiro pedido do estúdio."
-              action={<Button onClick={handleCreateClick}>Novo pedido</Button>}
+              action={can('orders.manage') ? <Button onClick={handleCreateClick}>Novo pedido</Button> : null}
             />
           </div>
         )}

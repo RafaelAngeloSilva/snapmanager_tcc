@@ -13,8 +13,10 @@ import GalleryUploadModal from '../../organisms/GalleryUploadModal';
 import CloseGalleryDialog from '../../organisms/CloseGalleryDialog';
 import DeleteGalleryDialog from '../../organisms/DeleteGalleryDialog';
 import styles from './Galleries.module.css';
+import { useAuth } from '../../../context/AuthContext';
 
 export default function Galleries() {
+  const { can } = useAuth();
   const [galleries, setGalleries] = useState([]);
   const [meta, setMeta] = useState({ current_page: 1, last_page: 1 });
   const [isLoading, setIsLoading] = useState(true);
@@ -185,8 +187,12 @@ export default function Galleries() {
           <div className={styles.stateBox}>
             <EmptyState
               title="Nenhuma galeria criada"
-              message="Crie uma galeria para o cliente escolher suas fotos favoritas."
-              action={<Button onClick={handleCreateClick}>Nova galeria</Button>}
+              message={
+                can('galleries.manage')
+                  ? 'Crie uma galeria para o cliente escolher suas fotos favoritas.'
+                  : 'Só administradores criam galerias. Peça a um administrador para criar a galeria do cliente.'
+              }
+              action={can('galleries.manage') ? <Button onClick={handleCreateClick}>Nova galeria</Button> : null}
             />
           </div>
         )}

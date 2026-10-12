@@ -14,8 +14,10 @@ import AppointmentFormModal from '../../organisms/AppointmentFormModal';
 import AppointmentDetailsModal from '../../organisms/AppointmentDetailsModal';
 import DeleteAppointmentDialog from '../../organisms/DeleteAppointmentDialog';
 import styles from './Appointments.module.css';
+import { useAuth } from '../../../context/AuthContext';
 
 export default function Appointments() {
+  const { can } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -67,7 +69,14 @@ export default function Appointments() {
       await addAppointmentToBoard(appointment.id);
       setBoardNotice({ tone: 'success', message: `"${appointment.title}" foi adicionado ao quadro de Produção.` });
     } catch (err) {
-      if (err.response?.status === 409) {
+      if (err.response?.status === 409 && err.response.data?.code === 'no_columns') {
+        setBoardNotice({
+          tone: 'error',
+          message: can('kanban.manageColumns')
+            ? 'O quadro de Produção ainda não tem colunas. Crie uma coluna na tela de Produção e tente de novo.'
+            : 'O quadro de Produção ainda não tem colunas. Peça a um administrador para criar as colunas.',
+        });
+      } else if (err.response?.status === 409) {
         setBoardNotice({ tone: 'info', message: `"${appointment.title}" já está no quadro de Produção.` });
       } else if (err.response?.status === 403) {
         setBoardNotice({ tone: 'error', message: 'Você não tem permissão para adicionar agendamentos ao quadro.' });
@@ -169,7 +178,7 @@ export default function Appointments() {
             <EmptyState
               title="Nenhum agendamento cadastrado"
               message="Comece criando o primeiro agendamento da agenda."
-              action={<Button onClick={handleCreateClick}>Novo agendamento</Button>}
+              action={can('appointments.manage') ? <Button onClick={handleCreateClick}>Novo agendamento</Button> : null}
             />
           </div>
         )}

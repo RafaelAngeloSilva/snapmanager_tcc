@@ -2,9 +2,12 @@ import Input from '../../atoms/Input';
 import Button from '../../atoms/Button';
 import { SearchIcon, PlusIcon } from '../../atoms/Icon';
 import styles from './ClientsToolbar.module.css';
+import { useAuth } from '../../../context/AuthContext';
 import { FIELD_LIMITS } from '../../../utils/fieldLimits';
 
 export default function ClientsToolbar({ searchTerm, onSearchChange, onCreateClick }) {
+  const { can } = useAuth();
+
   return (
     <div className={styles.toolbar}>
       <div className={styles.searchWrap}>
@@ -21,10 +24,12 @@ export default function ClientsToolbar({ searchTerm, onSearchChange, onCreateCli
         />
       </div>
 
-      <Button onClick={onCreateClick}>
-        <PlusIcon />
-        Novo cliente
-      </Button>
+      {can('clients.manage') && (
+        <Button onClick={onCreateClick}>
+          <PlusIcon />
+          Novo cliente
+        </Button>
+      )}
     </div>
   );
 }

@@ -4,8 +4,12 @@ import Button from '../../atoms/Button';
 import { EyeIcon, EditIcon, TrashIcon } from '../../atoms/Icon';
 import { formatDocument } from '../../../utils/cpf';
 import styles from './ClientsTable.module.css';
+import { useAuth } from '../../../context/AuthContext';
 
 export default function ClientsTable({ clients, onView, onEdit, onDelete }) {
+  const { can } = useAuth();
+  const canManage = can('clients.manage');
+
   return (
     <Table>
       <TableHead>
@@ -44,12 +48,16 @@ export default function ClientsTable({ clients, onView, onEdit, onDelete }) {
                   <Button variant="ghost" size="icon" onClick={() => onView(client)} aria-label={`Ver detalhes de ${client.name}`}>
                     <EyeIcon />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => onEdit(client)} aria-label={`Editar ${client.name}`}>
-                    <EditIcon />
-                  </Button>
-                  <Button variant="ghost" size="icon" onClick={() => onDelete(client)} aria-label={`Excluir ${client.name}`}>
-                    <TrashIcon />
-                  </Button>
+                  {canManage && (
+                    <>
+                      <Button variant="ghost" size="icon" onClick={() => onEdit(client)} aria-label={`Editar ${client.name}`}>
+                        <EditIcon />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => onDelete(client)} aria-label={`Excluir ${client.name}`}>
+                        <TrashIcon />
+                      </Button>
+                    </>
+                  )}
                 </div>
               </TableCell>
             </TableRow>

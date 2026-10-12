@@ -11,10 +11,12 @@ import ClientFormModal from '../../organisms/ClientFormModal';
 import ClientDetailsModal from '../../organisms/ClientDetailsModal';
 import DeleteClientDialog from '../../organisms/DeleteClientDialog';
 import styles from './Clients.module.css';
+import { useAuth } from '../../../context/AuthContext';
 
 const SEARCH_DEBOUNCE_MS = 350;
 
 export default function Clients() {
+  const { can } = useAuth();
   const [clients, setClients] = useState([]);
   const [meta, setMeta] = useState({ current_page: 1, last_page: 1 });
   const [isLoading, setIsLoading] = useState(true);
@@ -160,7 +162,7 @@ export default function Clients() {
             <EmptyState
               title="Nenhum cliente cadastrado"
               message="Comece criando o primeiro cliente do estúdio."
-              action={<Button onClick={handleCreateClick}>Novo cliente</Button>}
+              action={can('clients.manage') ? <Button onClick={handleCreateClick}>Novo cliente</Button> : null}
             />
           </div>
         )}
