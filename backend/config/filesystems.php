@@ -1,5 +1,7 @@
 <?php
 
+use App\Support\AwsCredentials;
+
 return [
 
     /*
@@ -77,10 +79,13 @@ return [
         // compatíveis com S3 (MinIO, R2...); na AWS ficam vazios.
         's3' => [
             'driver' => 's3',
-            'key' => env('AWS_ACCESS_KEY_ID'),
-            'secret' => env('AWS_SECRET_ACCESS_KEY'),
-            'region' => env('AWS_DEFAULT_REGION'),
-            'bucket' => env('AWS_BUCKET'),
+            // AwsCredentials::clean tira espaço, quebra de linha e aspas
+            // coladas por engano no painel — a AWS recusa tudo com
+            // "AuthorizationHeaderMalformed" quando isso acontece.
+            'key' => AwsCredentials::clean(env('AWS_ACCESS_KEY_ID')),
+            'secret' => AwsCredentials::clean(env('AWS_SECRET_ACCESS_KEY')),
+            'region' => AwsCredentials::clean(env('AWS_DEFAULT_REGION')),
+            'bucket' => AwsCredentials::clean(env('AWS_BUCKET')),
             'url' => env('AWS_URL'),
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
