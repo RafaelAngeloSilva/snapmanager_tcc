@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\FieldLimits;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -22,7 +23,7 @@ class StoreKanbanColumnRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:60'],
+            'name' => ['required', 'string', 'max:'.FieldLimits::KANBAN_COLUMN],
             'is_done' => ['sometimes', 'boolean'],
         ];
     }

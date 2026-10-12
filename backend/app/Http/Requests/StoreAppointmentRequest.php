@@ -4,6 +4,7 @@ namespace App\Http\Requests;
 
 use App\Enums\AppointmentStatus;
 use App\Http\Requests\Concerns\ChecksAppointmentSchedule;
+use App\Support\FieldLimits;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -40,15 +41,15 @@ class StoreAppointmentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'client_id' => ['required', 'integer', 'exists:clients,id'],
+            'client_id' => ['required', 'integer', Rule::exists('clients', 'id')->withoutTrashed()],
             'user_id' => ['nullable', 'integer', 'exists:users,id'],
-            'title' => ['required', 'string', 'max:255'],
-            'session_type' => ['nullable', 'string', 'max:255'],
-            'starts_at' => ['required', 'date'],
-            'ends_at' => ['required', 'date'],
-            'location' => ['nullable', 'string', 'max:255'],
+            'title' => ['required', 'string', 'max:'.FieldLimits::TITLE],
+            'session_type' => ['nullable', 'string', 'max:'.FieldLimits::CATEGORY],
+            'starts_at' => ['required', 'date', 'before:2100-01-01'],
+            'ends_at' => ['required', 'date', 'before:2100-01-01'],
+            'location' => ['nullable', 'string', 'max:'.FieldLimits::LOCATION],
             'status' => ['nullable', Rule::enum(AppointmentStatus::class)],
-            'notes' => ['nullable', 'string'],
+            'notes' => ['nullable', 'string', 'max:'.FieldLimits::NOTES],
         ];
     }
 

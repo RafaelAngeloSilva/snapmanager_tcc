@@ -8,14 +8,24 @@ use App\Http\Requests\UpdateAppointmentRequest;
 use App\Http\Resources\AppointmentResource;
 use App\Models\Appointment;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class AppointmentController extends Controller
 {
-    public function index(): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection
     {
+        // Filtro opcional por cliente (usado no formulário de pedido, que só
+        // pode vincular agendamentos do próprio cliente). Validado antes da
+        // query: texto/array numa coluna inteira viraria erro 500.
+        $filters = $request->validate(['client_id' => ['nullable', 'integer', 'min:1']]);
+
         return AppointmentResource::collection(
-            Appointment::with(['client', 'user'])->orderBy('starts_at')->paginate(15)
+            Appointment::with(['client', 'user'])
+                ->when($filters['client_id'] ?? null, fn ($query, $clientId) => $query->where('client_id', $clientId))
+                ->orderBy('starts_at')
+                ->paginate(15)
+                ->withQueryString()
         );
     }
 

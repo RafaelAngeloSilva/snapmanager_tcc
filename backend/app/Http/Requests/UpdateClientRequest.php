@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Rules\ValidCpf;
+use App\Support\FieldLimits;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -22,10 +23,15 @@ class UpdateClientRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
+        // Só normaliza STRINGS: um array no lugar de texto ("state[]=x")
+        // segue intacto e é rejeitado pela regra "string" (em vez de
+        // estourar um TypeError → 500).
+        $digits = fn ($value) => is_string($value) && $value !== '' ? preg_replace('/\D/', '', $value) : $value;
+
         $this->merge([
-            'zip_code' => $this->zip_code ? preg_replace('/\D/', '', $this->zip_code) : $this->zip_code,
-            'document' => $this->document ? preg_replace('/\D/', '', $this->document) : $this->document,
-            'state' => $this->state ? strtoupper($this->state) : $this->state,
+            'zip_code' => $digits($this->input('zip_code')),
+            'document' => $digits($this->input('document')),
+            'state' => is_string($this->input('state')) ? mb_strtoupper($this->input('state')) : $this->input('state'),
         ]);
     }
 
@@ -37,23 +43,23 @@ class UpdateClientRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['sometimes', 'required', 'string', 'max:255'],
-            'email' => ['nullable', 'email', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:30'],
+            'name' => ['sometimes', 'required', 'string', 'max:'.FieldLimits::PERSON_NAME],
+            'email' => ['nullable', 'string', 'email', 'max:'.FieldLimits::EMAIL],
+            'phone' => ['nullable', 'string', 'max:'.FieldLimits::PHONE, 'regex:'.FieldLimits::PHONE_PATTERN],
             'document' => [
-                'nullable', 'string', 'max:20', new ValidCpf,
+                'nullable', 'string', 'max:14', new ValidCpf,
                 Rule::unique('clients', 'document')
                     ->ignore($this->route('client'))
                     ->where(fn ($query) => $query->whereNull('deleted_at')),
             ],
-            'zip_code' => ['nullable', 'digits:8'],
-            'street' => ['nullable', 'string', 'max:255'],
-            'number' => ['nullable', 'string', 'max:20'],
-            'complement' => ['nullable', 'string', 'max:255'],
-            'neighborhood' => ['nullable', 'string', 'max:255'],
-            'city' => ['nullable', 'string', 'max:255'],
-            'state' => ['nullable', 'string', 'size:2'],
-            'notes' => ['nullable', 'string'],
+            'zip_code' => ['nullable', 'string', 'digits:8'],
+            'street' => ['nullable', 'string', 'max:'.FieldLimits::STREET],
+            'number' => ['nullable', 'string', 'max:'.FieldLimits::ADDRESS_NUMBER],
+            'complement' => ['nullable', 'string', 'max:'.FieldLimits::COMPLEMENT],
+            'neighborhood' => ['nullable', 'string', 'max:'.FieldLimits::NEIGHBORHOOD],
+            'city' => ['nullable', 'string', 'max:'.FieldLimits::CITY],
+            'state' => ['nullable', 'string', Rule::in(FieldLimits::STATES)],
+            'notes' => ['nullable', 'string', 'max:'.FieldLimits::NOTES],
         ];
     }
 }

@@ -12,6 +12,7 @@ import { fetchUsers } from '../../../api/users';
 import { toDatetimeLocalValue, nowAsDatetimeLocalValue } from '../../../utils/formatters';
 import { APPOINTMENT_STATUSES } from '../../../utils/appointmentStatus';
 import styles from './AppointmentFormModal.module.css';
+import { FIELD_LIMITS } from '../../../utils/fieldLimits';
 
 const EMPTY_FORM = {
   user_id: '',
@@ -155,6 +156,7 @@ export default function AppointmentFormModal({ isOpen, appointment, onClose, onS
 
         <FormField
           id="appointment-title"
+          maxLength={FIELD_LIMITS.TITLE}
           label="Título *"
           value={form.title}
           onChange={handleChange('title')}
@@ -166,6 +168,7 @@ export default function AppointmentFormModal({ isOpen, appointment, onClose, onS
         <div className={styles.grid}>
           <FormField
             id="appointment-session-type"
+            maxLength={FIELD_LIMITS.CATEGORY}
             label="Tipo de sessão"
             value={form.session_type}
             onChange={handleChange('session_type')}
@@ -218,6 +221,7 @@ export default function AppointmentFormModal({ isOpen, appointment, onClose, onS
         <div className={styles.grid}>
           <FormField
             id="appointment-location"
+            maxLength={FIELD_LIMITS.LOCATION}
             label="Local"
             value={form.location}
             onChange={handleChange('location')}
@@ -242,6 +246,7 @@ export default function AppointmentFormModal({ isOpen, appointment, onClose, onS
 
         <FormField
           id="appointment-notes"
+          maxLength={FIELD_LIMITS.NOTES}
           label="Observações"
           as={Textarea}
           rows={3}

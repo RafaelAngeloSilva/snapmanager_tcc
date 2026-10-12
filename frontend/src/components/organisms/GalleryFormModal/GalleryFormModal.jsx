@@ -12,6 +12,7 @@ import { createGallery, updateGallery } from '../../../api/galleries';
 import { fetchOrders } from '../../../api/orders';
 import { datetimeLocalToIso, datetimeLocalValueIn, nowAsDatetimeLocalValue, toDatetimeLocalValue } from '../../../utils/formatters';
 import styles from './GalleryFormModal.module.css';
+import { FIELD_LIMITS } from '../../../utils/fieldLimits';
 
 const DEFAULT_WATERMARK_TEXT = 'PROIBIDO REPRODUÇÃO';
 
@@ -81,12 +82,14 @@ export default function GalleryFormModal({ isOpen, gallery, onClose, onSaved }) 
   }, [selectedClient]);
 
   const orderOptions = useMemo(() => {
-    if (!gallery?.order) return orders;
+    // O pedido atual só volta como opção se o cliente não foi trocado (o
+    // back-end rejeita pedido de outro cliente).
+    if (!gallery?.order || gallery.client?.id !== selectedClient?.id) return orders;
 
     const alreadyIncluded = orders.some((order) => order.id === gallery.order.id);
 
     return alreadyIncluded ? orders : [gallery.order, ...orders];
-  }, [orders, gallery]);
+  }, [orders, gallery, selectedClient]);
 
   function handleChange(field) {
     return (event) => setForm((prev) => ({ ...prev, [field]: event.target.value }));
@@ -176,6 +179,7 @@ export default function GalleryFormModal({ isOpen, gallery, onClose, onSaved }) 
 
         <FormField
           id="gallery-title"
+          maxLength={FIELD_LIMITS.TITLE}
           label="Título *"
           value={form.title}
           onChange={handleChange('title')}
@@ -245,6 +249,7 @@ export default function GalleryFormModal({ isOpen, gallery, onClose, onSaved }) 
               {form.watermark_type === 'text' && (
                 <FormField
                   id="gallery-watermark-text"
+                  maxLength={FIELD_LIMITS.WATERMARK_TEXT}
                   label="Texto da marca d'água"
                   value={form.watermark_text}
                   onChange={handleChange('watermark_text')}
@@ -266,6 +271,7 @@ export default function GalleryFormModal({ isOpen, gallery, onClose, onSaved }) 
 
         <FormField
           id="gallery-description"
+          maxLength={FIELD_LIMITS.DESCRIPTION}
           label="Descrição"
           as={Textarea}
           rows={3}

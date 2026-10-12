@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
-import { fetchGoogleAuthStatus } from '../../../api/auth';
-import { API_ROOT_URL } from '../../../api/client';
+import { fetchGoogleAuthStatus, fetchRegistrationStatus } from '../../../api/auth';
+import { googleErrorMessage, startGoogleLogin } from '../../../utils/googleOAuth';
 import FormField from '../../molecules/FormField';
 import Button from '../../atoms/Button';
 import Spinner from '../../atoms/Spinner';
 import { ApertureIcon, GoogleIcon } from '../../atoms/Icon';
 import styles from './LoginForm.module.css';
+import { FIELD_LIMITS } from '../../../utils/fieldLimits';
+import PasswordInput from '../../atoms/PasswordInput';
 
 export default function LoginForm() {
   const { login } = useAuth();
@@ -20,12 +22,16 @@ export default function LoginForm() {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGoogleAvailable, setIsGoogleAvailable] = useState(false);
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
+  const [isRedirectingToGoogle, setIsRedirectingToGoogle] = useState(false);
 
   const redirectTo = location.state?.from?.pathname || '/';
 
   useEffect(() => {
-    if (searchParams.get('google_error')) {
-      setError('Não foi possível entrar com o Google. Tente novamente.');
+    const reason = searchParams.get('google_error');
+
+    if (reason) {
+      setError(googleErrorMessage(reason));
     }
   }, [searchParams]);
 
@@ -33,10 +39,27 @@ export default function LoginForm() {
     fetchGoogleAuthStatus()
       .then((data) => setIsGoogleAvailable(Boolean(data.available)))
       .catch(() => setIsGoogleAvailable(false));
+
+    // "Criar conta" só aparece se o back-end aceitar cadastro público.
+    fetchRegistrationStatus()
+      .then((data) => setIsRegistrationOpen(Boolean(data.available)))
+      .catch(() => setIsRegistrationOpen(false));
   }, []);
+
+  function handleGoogleLogin() {
+    setError('');
+    setIsRedirectingToGoogle(true);
+    startGoogleLogin();
+  }
+
+  // Bloqueia cliques duplos enquanto uma das duas formas de login está em andamento.
+  const isBusy = isSubmitting || isRedirectingToGoogle;
 
   async function handleSubmit(event) {
     event.preventDefault();
+
+    if (isBusy) return;
+
     setError('');
     setIsSubmitting(true);
 
@@ -46,6 +69,8 @@ export default function LoginForm() {
     } catch (err) {
       if (err.response?.status === 422) {
         setError('E-mail ou senha inválidos.');
+      } else if (err.response?.status === 429) {
+        setError(err.response.data?.message || 'Muitas tentativas. Aguarde um minuto e tente novamente.');
       } else {
         setError('Não foi possível entrar. Verifique se o backend está rodando.');
       }
@@ -75,6 +100,7 @@ export default function LoginForm() {
       <div className={styles.fields}>
         <FormField
           id="email"
+          maxLength={FIELD_LIMITS.EMAIL}
           label="E-mail"
           type="email"
           value={email}
@@ -87,8 +113,9 @@ export default function LoginForm() {
 
         <FormField
           id="password"
+          maxLength={FIELD_LIMITS.PASSWORD_MAX}
           label="Senha"
-          type="password"
+          as={PasswordInput}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
           autoComplete="current-password"
@@ -104,7 +131,7 @@ export default function LoginForm() {
         </Link>
       </div>
 
-      <Button type="submit" fullWidth isLoading={isSubmitting} className={styles.submit}>
+      <Button type="submit" fullWidth isLoading={isSubmitting} disabled={isBusy} className={styles.submit}>
         {isSubmitting ? <Spinner size="sm" /> : 'Entrar'}
       </Button>
 
@@ -114,21 +141,27 @@ export default function LoginForm() {
             <span>ou</span>
           </div>
 
-          <Button
-            type="button"
-            variant="secondary"
-            fullWidth
-            onClick={() => window.location.assign(`${API_ROOT_URL}/auth/google/redirect`)}
-          >
-            <GoogleIcon />
-            Entrar com Google
+          <Button type="button" variant="secondary" fullWidth onClick={handleGoogleLogin} disabled={isBusy}>
+            {isRedirectingToGoogle ? (
+              <>
+                <Spinner size="sm" />
+                Autenticando…
+              </>
+            ) : (
+              <>
+                <GoogleIcon />
+                Continuar com Google
+              </>
+            )}
           </Button>
         </>
       )}
 
-      <p className={styles.altAction}>
-        Não tem conta? <Link to="/register">Criar conta</Link>
-      </p>
+      {isRegistrationOpen && (
+        <p className={styles.altAction}>
+          Não possui uma conta? <Link to="/register">Criar conta</Link>
+        </p>
+      )}
     </form>
   );
 }

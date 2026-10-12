@@ -6,6 +6,7 @@ import Checkbox from '../../atoms/Checkbox';
 import FormField from '../../molecules/FormField';
 import { createColumn, updateColumn } from '../../../api/kanban';
 import styles from './KanbanColumnFormModal.module.css';
+import { FIELD_LIMITS } from '../../../utils/fieldLimits';
 
 const FORM_ID = 'kanban-column-form';
 
@@ -84,12 +85,12 @@ export default function KanbanColumnFormModal({ isOpen, column, onClose, onSaved
 
         <FormField
           id="kanban-column-name"
+          maxLength={FIELD_LIMITS.KANBAN_COLUMN}
           label="Nome *"
           value={name}
           onChange={(event) => setName(event.target.value)}
           error={errors.name}
           placeholder="Ex.: Em edição"
-          maxLength={60}
           required
         />
 

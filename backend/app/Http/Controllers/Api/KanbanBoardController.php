@@ -25,6 +25,15 @@ class KanbanBoardController extends Controller
      */
     public function index(Request $request): AnonymousResourceCollection
     {
+        // Filtros da URL validados ANTES de chegar à query: no PostgreSQL um
+        // texto/array numa coluna inteira ou de data vira erro 500.
+        $request->validate([
+            'assigned_to' => ['nullable', 'string', 'max:20'],
+            'priority' => ['nullable', 'string', 'max:20'],
+            'client_id' => ['nullable', 'integer', 'min:1'],
+            'origin' => ['nullable', 'string', 'max:20'],
+        ]);
+
         $columns = KanbanColumn::query()
             ->with(['tasks' => function ($query) use ($request) {
                 $query

@@ -184,6 +184,9 @@ DOCUMENT_CONVERTER_BINARY=/usr/bin/soffice
 DOCUMENT_CONVERTER_TIMEOUT=90
 
 RAILPACK_PHP_EXTENSIONS=exif
+
+REGISTRATION_ENABLED=false
+SANCTUM_TOKEN_EXPIRATION=10080
 ```
 
 Detalhes de cada variável:
@@ -214,6 +217,8 @@ Detalhes de cada variável:
 | `DOCUMENT_CONVERTER_BINARY` | `/usr/bin/soffice` | Caminho no Linux. O código não tem caminho fixo: localmente continua o caminho do Windows no seu `.env` |
 | `DOCUMENT_CONVERTER_TIMEOUT` | `90` | Segundos por conversão |
 | `RAILPACK_PHP_EXTENSIONS` | `exif` | Variável **de build**: extensão extra (ver seção 3) |
+| `REGISTRATION_ENABLED` | `false` | Cadastro público (`/api/register` cria conta de **atendente**, com acesso a dados de clientes). Desligado em produção — é o padrão mesmo sem a variável; o botão "Criar conta" some sozinho |
+| `SANCTUM_TOKEN_EXPIRATION` | `10080` | Validade do login em minutos (7 dias). Depois disso o usuário entra de novo |
 
 Variáveis que **não** devem ser criadas: `RAILPACK_DEPLOY_APT_PACKAGES` (já está
 no `railpack.json`), `RAILPACK_SKIP_MIGRATIONS` (idem), `PORT` (a Railway
@@ -331,11 +336,11 @@ S3).
   colocar o secret gerado em `CLICKSIGN_WEBHOOK_SECRET`.
 - **Front-end na Vercel**: `VITE_API_BASE_URL=https://<domínio>/api` na
   Vercel; na Railway, `FRONTEND_URL=https://<projeto>.vercel.app`.
-- **E-mail**: hoje `MAIL_MAILER` não está definido (padrão `log`). Os e-mails
-  de redefinição de senha **não são enviados**: o link aparece nos logs da
-  Railway. Antes de abrir para usuários reais, configure um provedor SMTP
-  (`MAIL_MAILER=smtp`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`,
-  `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS`).
+- **E-mail e login com Google**: a Railway bloqueia SMTP nos planos Trial e
+  Hobby, então o envio usa a API HTTPS da Brevo (`MAIL_MAILER=brevo`,
+  `BREVO_API_KEY`, `MAIL_FROM_ADDRESS`). Sem isso (`MAIL_MAILER` vazio = `log`)
+  os e-mails de redefinição de senha **não são enviados**. Passo a passo do
+  Google Cloud, da Brevo e das variáveis em [autenticacao.md](autenticacao.md).
 - **Expiração de galerias**: o comando `galleries:expire` não está agendado
   (como no ambiente local). Se for automatizar, criar um serviço Cron na
   Railway.

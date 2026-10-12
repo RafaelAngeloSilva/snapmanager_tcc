@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\UserRole;
+use App\Notifications\ResetPasswordNotification;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -42,6 +43,8 @@ class User extends Authenticatable
         // Caminho interno do disco — o front-end só precisa da URL pronta
         // (profile_photo_url, abaixo).
         'profile_photo_path',
+        // Identificador da conta Google: dado interno, nunca exposto.
+        'google_id',
     ];
 
     /**
@@ -53,6 +56,7 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'google_linked_at' => 'datetime',
             'password' => 'hashed',
             'role' => UserRole::class,
         ];
@@ -83,6 +87,39 @@ class User extends Authenticatable
                 ))
                 : null,
         );
+    }
+
+    /**
+     * Conta criada só pelo Google ainda não tem senha local.
+     */
+    public function hasPassword(): bool
+    {
+        return $this->password !== null && $this->password !== '';
+    }
+
+    /**
+     * Dados do usuário devolvidos pela API de autenticação/perfil — ÚNICO
+     * formato (login, cadastro, Google, /me, /profile). Nada de hash,
+     * google_id ou caminho interno de arquivo.
+     *
+     * @return array<string, mixed>
+     */
+    public function toAuthArray(): array
+    {
+        return [
+            ...$this->only(['id', 'name', 'email', 'role', 'profile_photo_url']),
+            'has_password' => $this->hasPassword(),
+            'google_linked' => $this->google_id !== null,
+        ];
+    }
+
+    /**
+     * E-mail de redefinição de senha em português, com o link do front-end
+     * (ver ResetPasswordNotification e AppServiceProvider).
+     */
+    public function sendPasswordResetNotification(#[\SensitiveParameter] $token): void
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 
     /**

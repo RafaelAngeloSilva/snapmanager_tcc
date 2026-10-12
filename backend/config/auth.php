@@ -114,4 +114,18 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Cadastro público
+    |--------------------------------------------------------------------------
+    |
+    | POST /api/register cria uma conta de ATENDENTE, com acesso a dados de
+    | clientes. Fechado por padrão: em produção as contas são criadas pela
+    | equipe. Ligue só em desenvolvimento/demonstração
+    | (REGISTRATION_ENABLED=true no .env local).
+    |
+    */
+
+    'registration_enabled' => (bool) env('REGISTRATION_ENABLED', false),
+
 ];

@@ -23,17 +23,26 @@ use App\Http\Controllers\Api\PublicOrderTrackingController;
 use App\Http\Controllers\Api\UserController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/register', [AuthController::class, 'register']);
-Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
-Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+/*
+| Rotas públicas de autenticação — com limite de tentativas (rate limiters
+| definidos em AppServiceProvider::configureRateLimiting).
+*/
+Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:login');
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:register');
+Route::get('/auth/registration/status', [AuthController::class, 'registrationStatus']);
+Route::post('/forgot-password', [AuthController::class, 'forgotPassword'])->middleware('throttle:password-reset');
+Route::post('/reset-password', [AuthController::class, 'resetPassword'])->middleware('throttle:password-reset');
 Route::get('/auth/google/status', [GoogleAuthController::class, 'status']);
+// Troca o código de uso único (devolvido no callback do Google) por um token.
+Route::post('/auth/google/exchange', [GoogleAuthController::class, 'exchange'])->middleware('throttle:oauth');
 
 Route::prefix('public/galleries/{gallery:access_token}')->group(function () {
-    Route::get('/', [PublicGalleryController::class, 'show']);
-    Route::get('/images/{image}', [PublicGalleryController::class, 'showImageFile']);
-    Route::get('/images/{image}/thumbnail', [PublicGalleryController::class, 'showThumbnailFile']);
-    Route::post('/select', [PublicGalleryController::class, 'selectImages']);
+    Route::middleware('throttle:public-read')->group(function () {
+        Route::get('/', [PublicGalleryController::class, 'show']);
+        Route::get('/images/{image}', [PublicGalleryController::class, 'showImageFile']);
+        Route::get('/images/{image}/thumbnail', [PublicGalleryController::class, 'showThumbnailFile']);
+    });
+    Route::post('/select', [PublicGalleryController::class, 'selectImages'])->middleware('throttle:public-write');
 });
 
 /*
@@ -85,8 +94,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // só opera sobre $request->user(), nunca sobre um id vindo do request.
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::put('/profile', [ProfileController::class, 'update']);
-    Route::put('/profile/password', [ProfileController::class, 'updatePassword']);
-    Route::post('/profile/photo', [ProfileController::class, 'updatePhoto']);
+    Route::put('/profile/password', [ProfileController::class, 'updatePassword'])->middleware('throttle:password-change');
+    Route::post('/profile/photo', [ProfileController::class, 'updatePhoto'])->middleware('throttle:uploads');
     Route::delete('/profile/photo', [ProfileController::class, 'destroyPhoto']);
 
     // Leitura de clientes/agenda: também liberada para o fotógrafo (precisa
@@ -123,8 +132,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // Documentos e assinaturas: criar, editar rascunho, signatários,
         // enviar, notificar, sincronizar e baixar os PDFs.
         Route::get('/documents/link-options', [DocumentController::class, 'linkOptions']);
-        Route::post('/documents', [DocumentController::class, 'store']);
-        Route::put('/documents/{document}', [DocumentController::class, 'update']);
+        Route::post('/documents', [DocumentController::class, 'store'])->middleware('throttle:uploads');
+        Route::put('/documents/{document}', [DocumentController::class, 'update'])->middleware('throttle:uploads');
         Route::get('/documents/{document}/file', [DocumentController::class, 'file']);
         // PDF que vai para a Clicksign (convertido, se o original é Word) e
         // nova tentativa de conversão de um Word em rascunho.
@@ -195,9 +204,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::apiResource('galleries', GalleryController::class)->except(['index', 'show']);
         Route::patch('/galleries/{gallery}/close', [GalleryController::class, 'close']);
-        Route::post('/galleries/{gallery}/images', [GalleryController::class, 'uploadImages']);
+        Route::post('/galleries/{gallery}/images', [GalleryController::class, 'uploadImages'])->middleware('throttle:uploads');
         Route::delete('/galleries/{gallery}/images/{image}', [GalleryController::class, 'destroyImage']);
-        Route::post('/galleries/{gallery}/watermark-image', [GalleryController::class, 'uploadWatermarkImage']);
+        Route::post('/galleries/{gallery}/watermark-image', [GalleryController::class, 'uploadWatermarkImage'])->middleware('throttle:uploads');
 
         // Estrutura do quadro: criar/renomear/reordenar/excluir colunas.
         // Define como o estúdio organiza a produção — decisão do admin.

@@ -9,6 +9,7 @@ import FormField from '../../molecules/FormField';
 import { updateOrderStatus } from '../../../api/orders';
 import { ORDER_STATUSES, ORDER_STATUS_LABELS, ORDER_STATUS_BADGE_VARIANT } from '../../../utils/orderStatus';
 import styles from './UpdateOrderStatusModal.module.css';
+import { FIELD_LIMITS } from '../../../utils/fieldLimits';
 
 const FORM_ID = 'order-status-form';
 
@@ -113,6 +114,7 @@ export default function UpdateOrderStatusModal({ isOpen, order, onClose, onUpdat
 
         <FormField
           id="order-status-notes"
+          maxLength={FIELD_LIMITS.STATUS_NOTE}
           label="Observação (opcional)"
           as={Textarea}
           rows={3}

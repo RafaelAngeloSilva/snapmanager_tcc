@@ -32,7 +32,7 @@ class StoreGalleryImagesRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'images' => ['required', 'array', 'min:1'],
+            'images' => ['required', 'array', 'min:1', 'max:50'],
             'images.*' => [
                 'required',
                 'file',

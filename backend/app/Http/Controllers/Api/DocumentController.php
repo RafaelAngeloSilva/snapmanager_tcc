@@ -6,8 +6,8 @@ use App\Enums\DocumentConversionStatus;
 use App\Enums\DocumentEventType;
 use App\Enums\DocumentFileType;
 use App\Enums\DocumentStatus;
-use App\Http\Controllers\Controller;
 use App\Exceptions\DocumentConversionException;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Concerns\ValidatesDocumentFields;
 use App\Http\Requests\StoreDocumentRequest;
 use App\Http\Requests\UpdateDocumentRequest;
@@ -19,6 +19,7 @@ use App\Models\Order;
 use App\Models\User;
 use App\Services\DocumentConversionService;
 use App\Services\FileStorage;
+use App\Support\FieldLimits;
 use App\Support\FileKeys;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -62,6 +63,8 @@ class DocumentController extends Controller
         $filters = $request->validate([
             'order_id' => ['nullable', 'integer'],
             'appointment_id' => ['nullable', 'integer'],
+            'status' => ['nullable', 'string', 'max:30'],
+            'search' => ['nullable', 'string', 'max:'.FieldLimits::SEARCH],
         ]);
 
         $documents = Document::query()

@@ -18,6 +18,14 @@ class OrderController extends Controller
 {
     public function index(Request $request): AnonymousResourceCollection
     {
+        // Filtros da URL validados ANTES de chegar à query: no PostgreSQL um
+        // texto/array numa coluna inteira ou de data vira erro 500.
+        $request->validate([
+            'status' => ['nullable', 'string', 'max:30'],
+            'client_id' => ['nullable', 'integer', 'min:1'],
+            'due_date' => ['nullable', 'date'],
+        ]);
+
         // statusHistories NÃO é carregado aqui de propósito: a tabela de
         // pedidos não exibe o histórico, só a tela de detalhes (show/update/
         // updateStatus, abaixo, continuam carregando). Evita ~2 queries de

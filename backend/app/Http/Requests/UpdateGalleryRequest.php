@@ -3,9 +3,10 @@
 namespace App\Http\Requests;
 
 use App\Enums\WatermarkType;
+use App\Http\Requests\Concerns\NormalizesExpiration;
+use App\Support\FieldLimits;
 use Carbon\Carbon;
 use Illuminate\Contracts\Validation\ValidationRule;
-use App\Http\Requests\Concerns\NormalizesExpiration;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -30,14 +31,16 @@ class UpdateGalleryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'client_id' => ['sometimes', 'required', 'integer', 'exists:clients,id'],
-            'order_id' => ['nullable', 'integer', 'exists:orders,id'],
-            'title' => ['sometimes', 'required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'expires_at' => ['nullable', 'date'],
+            // Cliente excluído não recebe NOVOS vínculos; manter o atual é permitido.
+            'client_id' => ['sometimes', 'required', 'integer', Rule::exists('clients', 'id')->where(fn ($query) => $query->whereNull('deleted_at')->orWhere('id', $this->route('gallery')?->client_id))],
+            // O pedido precisa ser do MESMO cliente da galeria.
+            'order_id' => ['nullable', 'integer', Rule::exists('orders', 'id')->where('client_id', (int) $this->input('client_id', $this->route('gallery')?->client_id))->withoutTrashed()],
+            'title' => ['sometimes', 'required', 'string', 'max:'.FieldLimits::TITLE],
+            'description' => ['nullable', 'string', 'max:'.FieldLimits::DESCRIPTION],
+            'expires_at' => ['nullable', 'date', 'before:2100-01-01'],
             'watermark_enabled' => ['sometimes', 'boolean'],
             'watermark_type' => ['sometimes', Rule::enum(WatermarkType::class)],
-            'watermark_text' => ['nullable', 'string', 'max:255'],
+            'watermark_text' => ['nullable', 'string', 'max:'.FieldLimits::WATERMARK_TEXT],
         ];
     }
 
@@ -50,6 +53,16 @@ class UpdateGalleryRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator) {
+            // Trocar SÓ o cliente não pode deixar a galeria com o pedido de
+            // outro cliente.
+            $gallery = $this->route('gallery');
+
+            if ($gallery && $this->filled('client_id') && ! $this->has('order_id') && ! $validator->errors()->has('client_id')
+                && $gallery->order_id && (int) $this->input('client_id') !== (int) $gallery->client_id
+                && optional($gallery->order()->first())->client_id !== (int) $this->input('client_id')) {
+                $validator->errors()->add('order_id', 'O pedido vinculado é de outro cliente. Remova ou troque o pedido ao mudar o cliente.');
+            }
+
             if (! $this->filled('expires_at') || $validator->errors()->has('expires_at')) {
                 return;
             }

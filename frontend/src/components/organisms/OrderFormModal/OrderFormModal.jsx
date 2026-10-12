@@ -11,6 +11,8 @@ import { createOrder, updateOrder } from '../../../api/orders';
 import { fetchAppointments } from '../../../api/appointments';
 import { formatDateTime, todayAsDateValue } from '../../../utils/formatters';
 import styles from './OrderFormModal.module.css';
+import { FIELD_LIMITS } from '../../../utils/fieldLimits';
+import { parseMoney } from '../../../utils/money';
 
 const EMPTY_FORM = {
   appointment_id: '',
@@ -42,11 +44,23 @@ export default function OrderFormModal({ isOpen, order, onClose, onSaved }) {
 
   useEffect(() => {
     // Só a primeira página, como combinado: não vira um módulo de agenda
-    // aqui, é só um select simples com título + data.
-    fetchAppointments({ page: 1 })
-      .then((response) => setAppointments(response.data))
-      .catch(() => setAppointments([]));
-  }, []);
+    // aqui, é só um select simples com título + data — agora só do cliente
+    // selecionado (o back-end só aceita agendamento do mesmo cliente).
+    if (!selectedClient?.id) {
+      setAppointments([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    fetchAppointments({ page: 1, clientId: selectedClient.id })
+      .then((response) => !cancelled && setAppointments(response.data))
+      .catch(() => !cancelled && setAppointments([]));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedClient?.id]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -71,15 +85,28 @@ export default function OrderFormModal({ isOpen, order, onClose, onSaved }) {
     setGeneralError('');
   }, [isOpen, order]);
 
-  // Se o pedido em edição tem um agendamento fora da primeira página
-  // carregada, garante que ele apareça como opção selecionável mesmo assim.
+  // Só agendamentos do cliente selecionado (o back-end rejeita vincular o
+  // agendamento de outro cliente). Se o pedido em edição tem um agendamento
+  // fora da primeira página carregada, ele continua aparecendo — desde que
+  // o cliente não tenha sido trocado.
   const appointmentOptions = useMemo(() => {
-    if (!order?.appointment) return appointments;
+    if (!selectedClient) return [];
 
-    const alreadyIncluded = appointments.some((appointment) => appointment.id === order.appointment.id);
+    const ofClient = appointments.filter((appointment) => appointment.client?.id === selectedClient.id);
+    const keepCurrent = order?.appointment && order.client?.id === selectedClient.id;
 
-    return alreadyIncluded ? appointments : [order.appointment, ...appointments];
-  }, [appointments, order]);
+    if (!keepCurrent || ofClient.some((appointment) => appointment.id === order.appointment.id)) {
+      return ofClient;
+    }
+
+    return [order.appointment, ...ofClient];
+  }, [appointments, order, selectedClient]);
+
+  // Trocar o cliente limpa o agendamento: o anterior seria de outro cliente.
+  function handleClientChange(client) {
+    setSelectedClient(client);
+    setForm((prev) => ({ ...prev, appointment_id: '' }));
+  }
 
   function handleChange(field) {
     return (event) => setForm((prev) => ({ ...prev, [field]: event.target.value }));
@@ -100,6 +127,15 @@ export default function OrderFormModal({ isOpen, order, onClose, onSaved }) {
       return;
     }
 
+    // Mesma regra do back-end (App\Rules\Money): "-0" vira 0; negativo,
+    // notação científica, NaN e 3+ casas são barrados antes de enviar.
+    const total = parseMoney(form.total);
+
+    if (total.error) {
+      setErrors({ total: total.error });
+      return;
+    }
+
     setIsSubmitting(true);
 
     const payload = {
@@ -114,8 +150,8 @@ export default function OrderFormModal({ isOpen, order, onClose, onSaved }) {
 
     // "total" segue a mesma regra do backend: só envia se preenchido, senão
     // deixa o default (0) do banco valer.
-    if (form.total !== '') {
-      payload.total = form.total;
+    if (total.value !== null) {
+      payload.total = total.value;
     }
 
     try {
@@ -158,7 +194,7 @@ export default function OrderFormModal({ isOpen, order, onClose, onSaved }) {
       <form id={FORM_ID} className={styles.form} onSubmit={handleSubmit}>
         {generalError && <div className={styles.generalError}>{generalError}</div>}
 
-        <ClientPicker value={selectedClient} onChange={setSelectedClient} error={errors.client_id} />
+        <ClientPicker value={selectedClient} onChange={handleClientChange} error={errors.client_id} />
 
         <FormField
           id="order-appointment"
@@ -178,6 +214,7 @@ export default function OrderFormModal({ isOpen, order, onClose, onSaved }) {
 
         <FormField
           id="order-title"
+          maxLength={FIELD_LIMITS.TITLE}
           label="Título *"
           value={form.title}
           onChange={handleChange('title')}
@@ -189,6 +226,7 @@ export default function OrderFormModal({ isOpen, order, onClose, onSaved }) {
         <div className={styles.grid}>
           <FormField
             id="order-service-type"
+            maxLength={FIELD_LIMITS.CATEGORY}
             label="Tipo de serviço"
             value={form.service_type}
             onChange={handleChange('service_type')}
@@ -210,9 +248,9 @@ export default function OrderFormModal({ isOpen, order, onClose, onSaved }) {
         <FormField
           id="order-total"
           label="Valor total (R$)"
-          type="number"
-          min="0"
-          step="0.01"
+          type="text"
+          inputMode="decimal"
+          maxLength={14}
           value={form.total}
           onChange={handleChange('total')}
           error={errors.total}
@@ -221,6 +259,7 @@ export default function OrderFormModal({ isOpen, order, onClose, onSaved }) {
 
         <FormField
           id="order-description"
+          maxLength={FIELD_LIMITS.DESCRIPTION}
           label="Descrição"
           as={Textarea}
           rows={2}
@@ -231,6 +270,7 @@ export default function OrderFormModal({ isOpen, order, onClose, onSaved }) {
 
         <FormField
           id="order-notes"
+          maxLength={FIELD_LIMITS.NOTES}
           label="Observações"
           as={Textarea}
           rows={2}

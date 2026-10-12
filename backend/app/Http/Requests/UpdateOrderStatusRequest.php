@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\OrderStatus;
+use App\Support\FieldLimits;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -26,7 +27,7 @@ class UpdateOrderStatusRequest extends FormRequest
     {
         return [
             'status' => ['required', Rule::enum(OrderStatus::class)],
-            'notes' => ['nullable', 'string'],
+            'notes' => ['nullable', 'string', 'max:'.FieldLimits::STATUS_NOTE],
         ];
     }
 }

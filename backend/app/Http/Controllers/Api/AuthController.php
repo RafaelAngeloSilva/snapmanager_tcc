@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Enums\UserRole;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\ForgotPasswordRequest;
 use App\Http\Requests\RegisterRequest;
 use App\Http\Requests\ResetPasswordRequest;
 use App\Models\User;
+use App\Support\FieldLimits;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 
@@ -38,15 +41,18 @@ class AuthController extends Controller
 
         return response()->json([
             'token' => $token,
-            'user' => $user->only(['id', 'name', 'email', 'role', 'profile_photo_url']),
+            'user' => $user->toAuthArray(),
         ], 201);
     }
 
     public function login(Request $request): JsonResponse
     {
         $credentials = $request->validate([
-            'email' => ['required', 'email'],
-            'password' => ['required', 'string'],
+            'email' => ['required', 'string', 'email', 'max:'.FieldLimits::EMAIL],
+            // Sem o limite de 72 do cadastro: contas antigas podem ter
+            // senha maior (a regra antiga não tinha máximo). O teto só evita
+            // payloads absurdos.
+            'password' => ['required', 'string', 'max:1024'],
         ]);
 
         if (! Auth::attempt($credentials)) {
@@ -61,7 +67,7 @@ class AuthController extends Controller
 
         return response()->json([
             'token' => $token,
-            'user' => $user->only(['id', 'name', 'email', 'role', 'profile_photo_url']),
+            'user' => $user->toAuthArray(),
         ]);
     }
 
@@ -72,10 +78,18 @@ class AuthController extends Controller
         return response()->json(['message' => 'Logout realizado com sucesso.']);
     }
 
+    /**
+     * Público: o front-end usa para mostrar ou esconder "Criar conta".
+     */
+    public function registrationStatus(): JsonResponse
+    {
+        return response()->json(['available' => (bool) config('auth.registration_enabled')]);
+    }
+
     public function me(Request $request): JsonResponse
     {
         return response()->json(
-            $request->user()->only(['id', 'name', 'email', 'role', 'profile_photo_url'])
+            $request->user()->toAuthArray()
         );
     }
 
@@ -84,13 +98,31 @@ class AuthController extends Controller
      * informado — evita que a resposta seja usada para descobrir quais
      * e-mails têm conta no sistema (enumeração de contas).
      */
+    /**
+     * Mensagem ÚNICA, com ou sem conta para o e-mail (não revela quem é
+     * cliente do sistema).
+     */
+    public const FORGOT_PASSWORD_MESSAGE = 'Se existir uma conta associada a este e-mail, enviaremos as instruções para redefinição da senha.';
+
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
-        Password::sendResetLink($request->only('email'));
+        $email = (string) $request->validated('email');
 
-        return response()->json([
-            'message' => 'Se o e-mail informado estiver cadastrado, um link de redefinição de senha foi enviado.',
-        ]);
+        // O e-mail é gerado e enviado DEPOIS da resposta: a resposta sai no
+        // mesmo tempo exista a conta ou não (sem isso, a demora do envio
+        // denunciaria quais e-mails estão cadastrados). O password broker do
+        // Laravel gera o token, guarda só o HASH dele e limita 1 envio por
+        // minuto por e-mail (config/auth.php: throttle).
+        dispatch(function () use ($email) {
+            try {
+                Password::sendResetLink(['email' => $email]);
+            } catch (\Throwable $e) {
+                // Falha do provedor de e-mail: registra sem expor o e-mail.
+                Log::error('Falha ao enviar e-mail de redefinição de senha.', ['exception' => $e::class]);
+            }
+        })->afterResponse();
+
+        return response()->json(['message' => self::FORGOT_PASSWORD_MESSAGE]);
     }
 
     public function resetPassword(ResetPasswordRequest $request): JsonResponse
@@ -98,17 +130,39 @@ class AuthController extends Controller
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function (User $user, string $password) {
+                // Mesma regra da troca de senha: a nova precisa ser diferente
+                // da atual. A exceção sai ANTES do broker apagar o token, então
+                // o link continua valendo para tentar outra senha.
+                if ($user->hasPassword() && Hash::check($password, $user->password)) {
+                    throw ValidationException::withMessages([
+                        'password' => ['A nova senha deve ser diferente da senha atual.'],
+                    ]);
+                }
+
                 // O cast "password" => "hashed" do model já garante o hash.
-                $user->forceFill(['password' => $password])->save();
+                // Conta criada só pelo Google ganha aqui a primeira senha
+                // (a posse do e-mail foi provada pelo link) e passa a entrar
+                // das duas formas. Abrir o link também comprova o e-mail
+                // (email_verified_at), usado no vínculo com o Google.
+                $user->forceFill([
+                    'password' => $password,
+                    'email_verified_at' => $user->email_verified_at ?? now(),
+                ])->save();
+
+                // Quem redefine a senha pode estar recuperando uma conta
+                // comprometida: encerra TODAS as sessões (tokens) existentes.
+                $user->tokens()->delete();
             }
         );
 
         if ($status !== Password::PASSWORD_RESET) {
+            // E-mail inexistente, token errado, expirado ou já usado: a
+            // MESMA mensagem (não confirma se o e-mail tem conta).
             throw ValidationException::withMessages([
-                'email' => [__($status)],
+                'email' => ['Este link de redefinição é inválido ou expirou. Solicite um novo link.'],
             ]);
         }
 
-        return response()->json(['message' => __($status)]);
+        return response()->json(['message' => 'Senha redefinida com sucesso.']);
     }
 }

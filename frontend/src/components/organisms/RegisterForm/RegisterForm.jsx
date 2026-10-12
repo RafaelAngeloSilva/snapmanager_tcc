@@ -5,6 +5,8 @@ import FormField from '../../molecules/FormField';
 import Button from '../../atoms/Button';
 import Spinner from '../../atoms/Spinner';
 import styles from './RegisterForm.module.css';
+import { FIELD_LIMITS } from '../../../utils/fieldLimits';
+import PasswordInput from '../../atoms/PasswordInput';
 
 const EMPTY_FORM = { name: '', email: '', password: '', password_confirmation: '' };
 
@@ -39,6 +41,10 @@ export default function RegisterForm() {
         });
 
         setErrors(fieldErrors);
+      } else if (err.response?.status === 403 || err.response?.status === 429) {
+        // Cadastro desativado no servidor ou excesso de tentativas: mostra a
+        // mensagem do back-end.
+        setGeneralError(err.response.data?.message || 'Não foi possível criar a conta.');
       } else {
         setGeneralError('Não foi possível criar a conta. Verifique se o backend está rodando.');
       }
@@ -59,6 +65,7 @@ export default function RegisterForm() {
 
       <FormField
         id="name"
+        maxLength={FIELD_LIMITS.PERSON_NAME}
         label="Nome"
         value={form.name}
         onChange={handleChange('name')}
@@ -70,6 +77,7 @@ export default function RegisterForm() {
 
       <FormField
         id="email"
+        maxLength={FIELD_LIMITS.EMAIL}
         label="E-mail"
         type="email"
         value={form.email}
@@ -82,8 +90,9 @@ export default function RegisterForm() {
 
       <FormField
         id="password"
+        maxLength={FIELD_LIMITS.PASSWORD_MAX}
         label="Senha"
-        type="password"
+        as={PasswordInput}
         value={form.password}
         onChange={handleChange('password')}
         error={errors.password}
@@ -94,8 +103,9 @@ export default function RegisterForm() {
 
       <FormField
         id="password_confirmation"
+        maxLength={FIELD_LIMITS.PASSWORD_MAX}
         label="Confirmar senha"
-        type="password"
+        as={PasswordInput}
         value={form.password_confirmation}
         onChange={handleChange('password_confirmation')}
         error={errors.password_confirmation}

@@ -21,7 +21,7 @@ class ReorderKanbanColumnsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'columns' => ['required', 'array', 'min:1'],
+            'columns' => ['required', 'array', 'min:1', 'max:100'],
             'columns.*' => ['required', 'integer', 'distinct', 'exists:kanban_columns,id'],
         ];
     }

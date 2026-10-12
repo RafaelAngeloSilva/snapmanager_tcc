@@ -29,7 +29,7 @@ class SelectGalleryImagesRequest extends FormRequest
         $gallery = $this->route('gallery');
 
         return [
-            'image_ids' => ['present', 'array'],
+            'image_ids' => ['present', 'array', 'max:5000'],
             'image_ids.*' => [
                 'integer',
                 Rule::exists('gallery_images', 'id')->where('gallery_id', $gallery?->id),

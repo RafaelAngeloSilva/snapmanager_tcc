@@ -12,6 +12,7 @@ import { fetchUsers } from '../../../api/users';
 import { KANBAN_PRIORITIES } from '../../../utils/kanban';
 import { roleLabel } from '../../../utils/permissions';
 import styles from './KanbanTaskFormModal.module.css';
+import { FIELD_LIMITS } from '../../../utils/fieldLimits';
 
 const EMPTY_FORM = {
   title: '',
@@ -136,6 +137,7 @@ export default function KanbanTaskFormModal({ isOpen, task, column, columns = []
 
         <FormField
           id="kanban-task-title"
+          maxLength={FIELD_LIMITS.TITLE}
           label="Título *"
           value={form.title}
           onChange={handleChange('title')}
@@ -215,6 +217,7 @@ export default function KanbanTaskFormModal({ isOpen, task, column, columns = []
 
         <FormField
           id="kanban-task-description"
+          maxLength={FIELD_LIMITS.DESCRIPTION}
           label="Descrição"
           as={Textarea}
           rows={3}

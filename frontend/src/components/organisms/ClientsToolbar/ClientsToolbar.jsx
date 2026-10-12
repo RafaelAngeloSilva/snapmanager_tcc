@@ -2,6 +2,7 @@ import Input from '../../atoms/Input';
 import Button from '../../atoms/Button';
 import { SearchIcon, PlusIcon } from '../../atoms/Icon';
 import styles from './ClientsToolbar.module.css';
+import { FIELD_LIMITS } from '../../../utils/fieldLimits';
 
 export default function ClientsToolbar({ searchTerm, onSearchChange, onCreateClick }) {
   return (
@@ -13,6 +14,7 @@ export default function ClientsToolbar({ searchTerm, onSearchChange, onCreateCli
         <Input
           value={searchTerm}
           onChange={(event) => onSearchChange(event.target.value)}
+          maxLength={FIELD_LIMITS.SEARCH}
           placeholder="Buscar por nome, e-mail, telefone ou documento..."
           className={styles.searchInput}
           aria-label="Buscar clientes"

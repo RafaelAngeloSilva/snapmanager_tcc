@@ -70,6 +70,14 @@ return [
             'path' => env('MAIL_SENDMAIL_PATH', '/usr/sbin/sendmail -bs -i'),
         ],
 
+        // API HTTPS da Brevo (App\Mail\Transport\BrevoTransport). Use em
+        // produção na Railway: os planos Trial/Hobby bloqueiam SMTP de saída.
+        'brevo' => [
+            'transport' => 'brevo',
+            'key' => env('BREVO_API_KEY'),
+            'timeout' => (int) env('BREVO_TIMEOUT', 10),
+        ],
+
         'log' => [
             'transport' => 'log',
             'channel' => env('MAIL_LOG_CHANNEL'),
