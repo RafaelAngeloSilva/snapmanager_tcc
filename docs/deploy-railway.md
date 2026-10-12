@@ -185,7 +185,6 @@ DOCUMENT_CONVERTER_TIMEOUT=90
 
 RAILPACK_PHP_EXTENSIONS=exif
 
-REGISTRATION_ENABLED=false
 SANCTUM_TOKEN_EXPIRATION=10080
 ```
 
@@ -217,7 +216,7 @@ Detalhes de cada variável:
 | `DOCUMENT_CONVERTER_BINARY` | `/usr/bin/soffice` | Caminho no Linux. O código não tem caminho fixo: localmente continua o caminho do Windows no seu `.env` |
 | `DOCUMENT_CONVERTER_TIMEOUT` | `90` | Segundos por conversão |
 | `RAILPACK_PHP_EXTENSIONS` | `exif` | Variável **de build**: extensão extra (ver seção 3) |
-| `REGISTRATION_ENABLED` | `false` | Cadastro público (`/api/register` cria conta de **atendente**, com acesso a dados de clientes). Desligado em produção — é o padrão mesmo sem a variável; o botão "Criar conta" some sozinho |
+| `REGISTRATION_ENABLED` | (não definir) | Cadastro público pela tela "Criar conta" e pelo Google (cria conta de **atendente**). **Aberto por padrão**. Para fechar, defina `false`: o botão "Criar conta" some sozinho |
 | `SANCTUM_TOKEN_EXPIRATION` | `10080` | Validade do login em minutos (7 dias). Depois disso o usuário entra de novo |
 
 Variáveis que **não** devem ser criadas: `RAILPACK_DEPLOY_APT_PACKAGES` (já está

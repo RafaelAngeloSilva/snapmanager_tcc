@@ -178,6 +178,7 @@ class AuthenticationFlowsTest extends TestCase
 
     public function test_new_google_account_is_refused_when_registration_is_closed(): void
     {
+        config(['auth.registration_enabled' => false]);
         $this->mockGoogle($this->googleUser());
 
         $this->assertSame('no_account', $this->loginErrorFrom($this->googleCallback()));

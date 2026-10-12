@@ -116,8 +116,24 @@ class SecurityHardeningTest extends TestCase
 
     // ===================================================== cadastro público
 
-    public function test_public_registration_is_closed_by_default(): void
+    public function test_public_registration_is_open_by_default(): void
     {
+        $this->getJson('/api/auth/registration/status')->assertOk()->assertExactJson(['available' => true]);
+
+        $this->postJson('/api/register', [
+            'name' => 'Nova Pessoa',
+            'email' => 'nova@example.com',
+            'password' => 'SenhaForte123',
+            'password_confirmation' => 'SenhaForte123',
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('users', ['email' => 'nova@example.com', 'role' => 'attendant']);
+    }
+
+    public function test_public_registration_can_be_closed(): void
+    {
+        config(['auth.registration_enabled' => false]);
+
         $this->getJson('/api/auth/registration/status')->assertOk()->assertExactJson(['available' => false]);
 
         $this->postJson('/api/register', [
@@ -466,6 +482,7 @@ class SecurityHardeningTest extends TestCase
 
     public function test_closed_registration_does_not_reveal_which_emails_exist(): void
     {
+        config(['auth.registration_enabled' => false]);
         User::factory()->create(['email' => 'existe@estudio.test']);
 
         foreach (['existe@estudio.test', 'nao-existe@estudio.test'] as $email) {
