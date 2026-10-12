@@ -8,6 +8,8 @@ import { useAuth } from '../../../context/AuthContext';
 import { roleLabel } from '../../../utils/permissions';
 import { deleteProfilePhoto, updateProfile, updateProfilePassword, uploadProfilePhoto } from '../../../api/profile';
 import styles from './ProfileModal.module.css';
+import { FIELD_LIMITS } from '../../../utils/fieldLimits';
+import PasswordInput from '../../atoms/PasswordInput';
 
 function extractErrorMessage(err, fallback) {
   const errors = err.response?.data?.errors;
@@ -112,6 +114,19 @@ export default function ProfileModal({ isOpen, onClose }) {
       return;
     }
 
+    // Aviso antecipado; quem garante a regra é o back-end (compara com o hash).
+    if (newPassword === currentPassword) {
+      setPasswordStatus('error');
+      setPasswordMessage('A nova senha deve ser diferente da senha atual.');
+      return;
+    }
+
+    if (newPassword.length < FIELD_LIMITS.PASSWORD_MIN) {
+      setPasswordStatus('error');
+      setPasswordMessage(`A nova senha deve ter pelo menos ${FIELD_LIMITS.PASSWORD_MIN} caracteres.`);
+      return;
+    }
+
     try {
       await updateProfilePassword({ currentPassword, password: newPassword, passwordConfirmation: newPasswordConfirmation });
       setPasswordStatus('success');
@@ -122,7 +137,7 @@ export default function ProfileModal({ isOpen, onClose }) {
     } catch (err) {
       setPasswordStatus('error');
       setPasswordMessage(
-        err.response?.status === 422
+        err.response?.status === 422 || err.response?.status === 429
           ? extractErrorMessage(err, 'Não foi possível alterar a senha.')
           : 'Não foi possível alterar a senha.'
       );
@@ -170,7 +185,7 @@ export default function ProfileModal({ isOpen, onClose }) {
         <form className={styles.section} onSubmit={handleNameSubmit}>
           <h3 className={styles.sectionTitle}>Dados do perfil</h3>
 
-          <FormField label="Nome" id="profile-name" value={name} onChange={(event) => setName(event.target.value)} required />
+          <FormField label="Nome" id="profile-name" value={name} onChange={(event) => setName(event.target.value)} maxLength={FIELD_LIMITS.PERSON_NAME} required />
           <FormField label="E-mail" id="profile-email" value={user?.email || ''} disabled />
           <FormField label="Perfil" id="profile-role" value={roleLabel(user?.role)} disabled />
 
@@ -182,46 +197,62 @@ export default function ProfileModal({ isOpen, onClose }) {
           </Button>
         </form>
 
-        <form className={styles.section} onSubmit={handlePasswordSubmit}>
-          <h3 className={styles.sectionTitle}>Alterar senha</h3>
+        {user && user.has_password === false ? (
+          // Conta criada pelo Google: ainda não há senha atual para confirmar.
+          // Criar a primeira senha exige provar a posse do e-mail (link do
+          // "Esqueci minha senha"), não só estar logado.
+          <div className={styles.section}>
+            <h3 className={styles.sectionTitle}>Senha</h3>
+            <p className={styles.hint}>
+              Sua conta entra com o Google e ainda não tem senha. Para também poder entrar com e-mail e senha, saia e
+              use <strong>Esqueci minha senha</strong> na tela de login — enviaremos um link para {user.email}.
+            </p>
+          </div>
+        ) : (
+          <form className={styles.section} onSubmit={handlePasswordSubmit}>
+            <h3 className={styles.sectionTitle}>Alterar senha</h3>
 
-          <FormField
-            label="Senha atual"
-            id="profile-current-password"
-            type="password"
-            autoComplete="current-password"
-            value={currentPassword}
-            onChange={(event) => setCurrentPassword(event.target.value)}
-            required
-          />
-          <FormField
-            label="Nova senha"
-            id="profile-new-password"
-            type="password"
-            autoComplete="new-password"
-            value={newPassword}
-            onChange={(event) => setNewPassword(event.target.value)}
-            minLength={8}
-            required
-          />
-          <FormField
-            label="Confirmar nova senha"
-            id="profile-new-password-confirmation"
-            type="password"
-            autoComplete="new-password"
-            value={newPasswordConfirmation}
-            onChange={(event) => setNewPasswordConfirmation(event.target.value)}
-            minLength={8}
-            required
-          />
+            <FormField
+              label="Senha atual"
+              id="profile-current-password"
+              maxLength={FIELD_LIMITS.PASSWORD_MAX}
+              as={PasswordInput}
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(event) => setCurrentPassword(event.target.value)}
+              required
+            />
+            <FormField
+              label="Nova senha"
+              id="profile-new-password"
+              maxLength={FIELD_LIMITS.PASSWORD_MAX}
+              as={PasswordInput}
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+              minLength={8}
+              required
+            />
+            <FormField
+              label="Confirmar nova senha"
+              id="profile-new-password-confirmation"
+              maxLength={FIELD_LIMITS.PASSWORD_MAX}
+              as={PasswordInput}
+              autoComplete="new-password"
+              value={newPasswordConfirmation}
+              onChange={(event) => setNewPasswordConfirmation(event.target.value)}
+              minLength={8}
+              required
+            />
 
-          {passwordStatus === 'error' && <p className={styles.errorText}>{passwordMessage}</p>}
-          {passwordStatus === 'success' && <p className={styles.successText}>{passwordMessage}</p>}
+            {passwordStatus === 'error' && <p className={styles.errorText}>{passwordMessage}</p>}
+            {passwordStatus === 'success' && <p className={styles.successText}>{passwordMessage}</p>}
 
-          <Button type="submit" disabled={passwordStatus === 'loading'} className={styles.sectionSubmit}>
-            {passwordStatus === 'loading' ? <Spinner size="sm" /> : 'Alterar senha'}
-          </Button>
-        </form>
+            <Button type="submit" disabled={passwordStatus === 'loading'} className={styles.sectionSubmit}>
+              {passwordStatus === 'loading' ? <Spinner size="sm" /> : 'Alterar senha'}
+            </Button>
+          </form>
+        )}
       </div>
     </Modal>
   );

@@ -211,6 +211,9 @@ body {
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   font-size: 15px;
+  /* Palavras longas sem espaço (URL, "aaaa...") quebram em vez de vazar de
+     cards, tabelas e modais. */
+  overflow-wrap: break-word;
   line-height: 1.55;
   font-variant-numeric: tabular-nums;
 }
@@ -257,4 +260,10 @@ h4 {
   font-weight: 600;
   margin: 0;
   color: var(--color-text);
+}
+
+/* Textos livres exibidos (observações, descrições) preservam as quebras de
+   linha digitadas sem estourar a largura do componente. */
+textarea {
+  overflow-wrap: break-word;
 }

@@ -11,8 +11,8 @@ Route::get('/', function () {
 // inteira do navegador até o Google e de volta, não chamadas XHR — o
 // Socialite precisa do middleware de sessão do grupo "web" pra guardar e
 // validar o "state" (proteção contra CSRF/state injection).
-Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect']);
-Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback']);
+Route::get('/auth/google/redirect', [GoogleAuthController::class, 'redirect'])->middleware('throttle:oauth');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->middleware('throttle:oauth');
 
 // SnapManager é uma API pura (sem login via sessão web). Esta rota existe só
 // como fallback nomeado para o middleware auth:sanctum não quebrar quando

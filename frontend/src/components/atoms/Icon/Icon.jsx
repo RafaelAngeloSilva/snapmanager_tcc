@@ -35,6 +35,18 @@ export function EyeIcon(props) {
   );
 }
 
+/** Olho riscado — "senha oculta" (par do EyeIcon). */
+export function EyeOffIcon(props) {
+  return (
+    <svg {...commonProps} {...props}>
+      <path d="M9.9 5.7A9.9 9.9 0 0 1 12 5.5C18 5.5 21.5 12 21.5 12a17.6 17.6 0 0 1-2.9 3.7" />
+      <path d="M6.6 6.6C3.9 8.4 2.5 12 2.5 12S6 18.5 12 18.5a9.6 9.6 0 0 0 5.4-1.6" />
+      <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+      <path d="M3 3l18 18" />
+    </svg>
+  );
+}
+
 export function EditIcon(props) {
   return (
     <svg {...commonProps} {...props}>

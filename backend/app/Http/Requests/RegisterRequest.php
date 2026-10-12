@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Support\FieldLimits;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
@@ -13,7 +15,16 @@ class RegisterRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        // Cadastro público fechado por padrão (config/auth.php:
+        // registration_enabled). Fica no authorize() — e não no controller —
+        // porque ele roda ANTES da validação: assim um cadastro fechado não
+        // responde "e-mail já em uso" e não revela quem tem conta.
+        return (bool) config('auth.registration_enabled');
+    }
+
+    protected function failedAuthorization(): void
+    {
+        throw new AuthorizationException('O cadastro público está desativado. Peça a um administrador para criar sua conta.');
     }
 
     /**
@@ -24,10 +35,11 @@ class RegisterRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
+            'name' => ['required', 'string', 'max:'.FieldLimits::PERSON_NAME],
+            'email' => ['required', 'string', 'email', 'max:'.FieldLimits::EMAIL, 'unique:users,email'],
             // "confirmed" exige um campo "password_confirmation" igual.
-            'password' => ['required', 'confirmed', Password::min(8)],
+            // Password::defaults(): regra única (AppServiceProvider).
+            'password' => ['required', 'string', 'confirmed', Password::defaults()],
         ];
     }
 }

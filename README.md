@@ -39,6 +39,8 @@ O SnapManager permite que um estúdio fotográfico controle, em um único painel
 
 Backend na Railway (Railpack, PostgreSQL, Amazon S3, LibreOffice): veja [docs/deploy-railway.md](docs/deploy-railway.md).
 
+Login com Google, "Esqueci minha senha" e envio de e-mail (Brevo): veja [docs/autenticacao.md](docs/autenticacao.md).
+
 ## Como rodar o backend
 
 ```bash
@@ -156,6 +158,18 @@ Decisões que **não** vieram prontas do enunciado e precisaram de critério:
 - **Fotógrafo e editor não têm state machine de transição** — eles podem chamar `PATCH /orders/{order}/status` com qualquer valor de `OrderStatus`, não só "capturado"/"em edição" especificamente. O sistema nunca teve uma regra de transição de estados (o endpoint sempre aceitou qualquer status válido, de qualquer status atual); adicionar essa restrição agora seria inventar uma regra de negócio nova, não corrigir uma existente.
 
 O front-end (`frontend/src/utils/permissions.js` + `useAuth().can(...)`/`hasRole(...)`) espelha essa mesma matriz só para **esconder/desabilitar** o que a pessoa não pode fazer (itens do menu, botões de ação, rotas inteiras redirecionando para `/pedidos`) — nunca é a camada de segurança. Mesmo que esse arquivo divirja do back-end por engano, o Laravel continua bloqueando a ação com 403.
+
+### Validação, limites e proteção contra abuso
+
+- **Back-end é a validação final.** Todo endpoint de escrita usa Form Request; o React só repete as regras para conforto (aviso antes de enviar, `maxLength`, contador de caracteres).
+- **Limites de texto centralizados** em `App\Support\FieldLimits` (espelhado em `frontend/src/utils/fieldLimits.js`): nome 120, título 150, tipo de ensaio/serviço 80, observações/descrições 2000, observação de status 500, documentos 5000, busca 100. Telefone só aceita dígitos, espaço, `+ ( ) - .`.
+- **Valores em reais** pela regra `App\Rules\Money`: 0 a 99.999.999,99 (a coluna é `decimal(10,2)`), até 2 casas, sem notação científica/NaN/Infinity; `-0` é normalizado para `0`. Posições do Kanban: inteiros de 0 a 100.000.
+- **Vínculos coerentes**: não se cria nada para cliente excluído; o agendamento de um pedido e o pedido de uma galeria precisam ser do mesmo cliente.
+- **Excluir cliente** (soft delete) cancela, na mesma transação, os agendamentos dele ainda agendados/confirmados; concluídos e já cancelados viram histórico intacto.
+- **Senha**: 8 a 72 caracteres (limite real do bcrypt), nova senha diferente da atual (comparada com o hash), troca de senha encerra as outras sessões e redefinição encerra todas. Tokens expiram em 7 dias (`SANCTUM_TOKEN_EXPIRATION`).
+- **Cadastro público desligado por padrão** (`REGISTRATION_ENABLED`): ele cria conta de atendente, com acesso a dados de clientes.
+- **Rate limit** (`AppServiceProvider::configureRateLimiting`): login 5/min por e-mail+IP e 20/min por IP; cadastro 10/h; esqueci/redefinir senha 5/min; troca de senha 5/min; uploads 120/min; galeria pública 600 leituras e 20 seleções por minuto.
+- **Filtros de listagem** (`?client_id=`, `?search=`...) são validados antes da consulta — texto ou array em coluna numérica responde 422, nunca 500.
 
 ## Enums
 

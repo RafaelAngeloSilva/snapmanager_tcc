@@ -6,6 +6,7 @@ import Spinner from '../../atoms/Spinner';
 import { CheckCircleIcon } from '../../atoms/Icon';
 import { forgotPassword } from '../../../api/auth';
 import styles from './ForgotPasswordForm.module.css';
+import { FIELD_LIMITS } from '../../../utils/fieldLimits';
 
 export default function ForgotPasswordForm() {
   const [email, setEmail] = useState('');
@@ -15,6 +16,9 @@ export default function ForgotPasswordForm() {
 
   async function handleSubmit(event) {
     event.preventDefault();
+
+    if (isSubmitting) return;
+
     setError('');
     setIsSubmitting(true);
 
@@ -24,6 +28,8 @@ export default function ForgotPasswordForm() {
     } catch (err) {
       if (err.response?.status === 422) {
         setError('Informe um e-mail válido.');
+      } else if (err.response?.status === 429) {
+        setError(err.response.data?.message || 'Muitas solicitações. Aguarde um minuto e tente novamente.');
       } else {
         setError('Não foi possível processar o pedido. Tente novamente.');
       }
@@ -40,8 +46,8 @@ export default function ForgotPasswordForm() {
         </span>
         <h1 className={styles.title}>Verifique seu e-mail</h1>
         <p className={styles.subtitle}>
-          Se <strong>{email}</strong> estiver cadastrado, enviamos um link para redefinir a senha. Em ambiente
-          local, o link aparece no arquivo de log do backend (veja o DEMO.md).
+          Se existir uma conta associada a este e-mail, enviaremos as instruções para redefinição da senha. O link
+          vale por 60 minutos — confira também a caixa de spam.
         </p>
         <Link to="/login" className={styles.backLink}>
           Voltar para o login
@@ -62,6 +68,7 @@ export default function ForgotPasswordForm() {
 
       <FormField
         id="email"
+        maxLength={FIELD_LIMITS.EMAIL}
         label="E-mail"
         type="email"
         value={email}
@@ -72,7 +79,14 @@ export default function ForgotPasswordForm() {
       />
 
       <Button type="submit" fullWidth isLoading={isSubmitting} className={styles.submit}>
-        {isSubmitting ? <Spinner size="sm" /> : 'Enviar link de redefinição'}
+        {isSubmitting ? (
+          <>
+            <Spinner size="sm" />
+            Enviando…
+          </>
+        ) : (
+          'Enviar link de redefinição'
+        )}
       </Button>
 
       <p className={styles.altAction}>

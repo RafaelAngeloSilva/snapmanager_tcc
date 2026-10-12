@@ -10,6 +10,7 @@ import { fetchAddressByCep } from '../../../api/cep';
 import { maskDocument, cpfHelperMessage } from '../../../utils/cpf';
 import { maskCep } from '../../../utils/masks';
 import styles from './ClientFormModal.module.css';
+import { FIELD_LIMITS } from '../../../utils/fieldLimits';
 
 const BRAZILIAN_STATES = [
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG',
@@ -165,6 +166,7 @@ export default function ClientFormModal({ isOpen, client, onClose, onSaved }) {
 
         <FormField
           id="client-name"
+          maxLength={FIELD_LIMITS.PERSON_NAME}
           label="Nome *"
           value={form.name}
           onChange={handleChange('name')}
@@ -175,6 +177,7 @@ export default function ClientFormModal({ isOpen, client, onClose, onSaved }) {
         <div className={styles.grid}>
           <FormField
             id="client-email"
+            maxLength={FIELD_LIMITS.EMAIL}
             label="E-mail"
             type="email"
             value={form.email}
@@ -183,6 +186,7 @@ export default function ClientFormModal({ isOpen, client, onClose, onSaved }) {
           />
           <FormField
             id="client-phone"
+            maxLength={FIELD_LIMITS.PHONE}
             label="Telefone"
             value={form.phone}
             onChange={handleChange('phone')}
@@ -229,6 +233,7 @@ export default function ClientFormModal({ isOpen, client, onClose, onSaved }) {
 
           <FormField
             id="client-neighborhood"
+            maxLength={FIELD_LIMITS.NEIGHBORHOOD}
             label="Bairro"
             value={form.neighborhood}
             onChange={handleChange('neighborhood')}
@@ -238,6 +243,7 @@ export default function ClientFormModal({ isOpen, client, onClose, onSaved }) {
 
         <FormField
           id="client-street"
+          maxLength={FIELD_LIMITS.STREET}
           label="Rua"
           value={form.street}
           onChange={handleChange('street')}
@@ -247,6 +253,7 @@ export default function ClientFormModal({ isOpen, client, onClose, onSaved }) {
         <div className={styles.grid}>
           <FormField
             id="client-number"
+            maxLength={FIELD_LIMITS.ADDRESS_NUMBER}
             label="Número"
             value={form.number}
             onChange={handleChange('number')}
@@ -254,6 +261,7 @@ export default function ClientFormModal({ isOpen, client, onClose, onSaved }) {
           />
           <FormField
             id="client-complement"
+            maxLength={FIELD_LIMITS.COMPLEMENT}
             label="Complemento"
             value={form.complement}
             onChange={handleChange('complement')}
@@ -264,6 +272,7 @@ export default function ClientFormModal({ isOpen, client, onClose, onSaved }) {
         <div className={styles.grid}>
           <FormField
             id="client-city"
+            maxLength={FIELD_LIMITS.CITY}
             label="Cidade"
             value={form.city}
             onChange={handleChange('city')}
@@ -288,6 +297,7 @@ export default function ClientFormModal({ isOpen, client, onClose, onSaved }) {
 
         <FormField
           id="client-notes"
+          maxLength={FIELD_LIMITS.NOTES}
           label="Observações"
           as={Textarea}
           rows={3}

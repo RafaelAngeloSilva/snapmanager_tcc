@@ -2,18 +2,18 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\GalleryStatus;
+use App\Enums\WatermarkType;
+use App\Exceptions\StoredFileNotFoundException;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreGalleryImagesRequest;
 use App\Http\Requests\StoreGalleryRequest;
 use App\Http\Requests\StoreGalleryWatermarkImageRequest;
 use App\Http\Requests\UpdateGalleryRequest;
-use App\Enums\GalleryStatus;
-use App\Enums\WatermarkType;
 use App\Http\Resources\GalleryImageResource;
 use App\Http\Resources\GalleryResource;
 use App\Models\Gallery;
 use App\Models\GalleryImage;
-use App\Exceptions\StoredFileNotFoundException;
 use App\Services\FileStorage;
 use App\Services\GalleryThumbnailService;
 use App\Services\WatermarkService;
@@ -60,6 +60,13 @@ class GalleryController extends Controller
 
     public function index(Request $request): AnonymousResourceCollection
     {
+        // Filtros da URL validados ANTES de chegar à query: no PostgreSQL um
+        // texto/array numa coluna inteira ou de data vira erro 500.
+        $request->validate([
+            'status' => ['nullable', 'string', 'max:30'],
+            'client_id' => ['nullable', 'integer', 'min:1'],
+        ]);
+
         $galleries = Gallery::query()
             ->with(['client', 'order'])
             ->withCount([

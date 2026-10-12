@@ -2,6 +2,7 @@ import Input from '../../atoms/Input';
 import { SearchIcon } from '../../atoms/Icon';
 import { DOCUMENT_FILTERS } from '../../../utils/documents';
 import styles from './DocumentFilters.module.css';
+import { FIELD_LIMITS } from '../../../utils/fieldLimits';
 
 /**
  * Filtro por grupo de status + busca por título ou cliente. Os dois são
@@ -31,6 +32,7 @@ export default function DocumentFilters({ status, search, onStatusChange, onSear
           type="search"
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
+          maxLength={FIELD_LIMITS.SEARCH}
           placeholder="Buscar por título ou cliente..."
           aria-label="Buscar por título ou cliente"
         />

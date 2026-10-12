@@ -4,6 +4,7 @@ import Select from '../../atoms/Select';
 import { TrashIcon } from '../../atoms/Icon';
 import { SIGNER_CHANNELS, maskPhone } from '../../../utils/documents';
 import styles from './SignerFields.module.css';
+import { FIELD_LIMITS } from '../../../utils/fieldLimits';
 
 /**
  * Campos de um signatário no formulário. O campo de contato acompanha o
@@ -27,6 +28,7 @@ export default function SignerFields({ index, signer, errors = {}, onChange, onR
           onChange={(event) => update('name', event.target.value)}
           invalid={Boolean(errors.name)}
           placeholder="Nome e sobrenome"
+          maxLength={FIELD_LIMITS.PERSON_NAME}
           autoComplete="off"
         />
         {errors.name && <span className={styles.error}>{errors.name}</span>}
@@ -67,6 +69,7 @@ export default function SignerFields({ index, signer, errors = {}, onChange, onR
             onChange={(event) => update('email', event.target.value)}
             invalid={Boolean(errors.email)}
             placeholder="nome@exemplo.com"
+            maxLength={FIELD_LIMITS.EMAIL}
           />
           {errors.email && <span className={styles.error}>{errors.email}</span>}
         </label>

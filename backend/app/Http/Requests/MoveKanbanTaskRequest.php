@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\FieldLimits;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -24,7 +25,7 @@ class MoveKanbanTaskRequest extends FormRequest
     {
         return [
             'kanban_column_id' => ['required', 'integer', 'exists:kanban_columns,id'],
-            'position' => ['required', 'integer', 'min:0'],
+            'position' => ['required', 'integer', 'min:0', 'max:'.FieldLimits::POSITION_MAX],
         ];
     }
 }

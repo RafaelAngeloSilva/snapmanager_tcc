@@ -30,6 +30,20 @@ export async function fetchGoogleAuthStatus() {
   return response.data;
 }
 
+/** Troca o código de uso único do login com Google (+ nonce desta aba) por um token. */
+export async function exchangeGoogleCode(code, nonce) {
+  const response = await apiClient.post('/auth/google/exchange', { code, nonce });
+
+  return response.data;
+}
+
+/** O cadastro público pode estar desativado no back-end (REGISTRATION_ENABLED). */
+export async function fetchRegistrationStatus() {
+  const response = await apiClient.get('/auth/registration/status');
+
+  return response.data;
+}
+
 export async function logout() {
   await apiClient.post('/logout');
 }

@@ -2,6 +2,7 @@ export {
   SearchIcon,
   PlusIcon,
   EyeIcon,
+  EyeOffIcon,
   EditIcon,
   TrashIcon,
   WarningIcon,

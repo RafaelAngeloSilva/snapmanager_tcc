@@ -12,6 +12,7 @@ import { createDocument, fetchDocumentLinkOptions, updateDocument } from '../../
 import { dateValueIn, formatDateTime, formatDueDate } from '../../../utils/formatters';
 import { ACCEPTED_UPLOAD, DOCUMENT_TYPES, apiErrorMessage, fieldErrors, formatFileSize, uploadTypeOf } from '../../../utils/documents';
 import styles from './DocumentFormModal.module.css';
+import { FIELD_LIMITS } from '../../../utils/fieldLimits';
 
 const FORM_ID = 'document-form';
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -223,12 +224,12 @@ export default function DocumentFormModal({ isOpen, document, initialValues = nu
         <div className={styles.grid}>
           <FormField
             id="document-title"
+            maxLength={FIELD_LIMITS.TITLE}
             label="Título *"
             value={form.title}
             onChange={handleChange('title')}
             error={errors.title}
             placeholder="Ex.: Contrato de ensaio — Maria"
-            maxLength={255}
             required
           />
 
@@ -333,6 +334,7 @@ export default function DocumentFormModal({ isOpen, document, initialValues = nu
 
         <FormField
           id="document-notes"
+          maxLength={FIELD_LIMITS.DOCUMENT_NOTES}
           label="Observações"
           as={Textarea}
           rows={3}

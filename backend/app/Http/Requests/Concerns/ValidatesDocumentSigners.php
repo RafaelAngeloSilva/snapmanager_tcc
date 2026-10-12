@@ -4,6 +4,7 @@ namespace App\Http\Requests\Concerns;
 
 use App\Enums\SignerChannel;
 use App\Models\DocumentSigner;
+use App\Support\FieldLimits;
 use Closure;
 use Illuminate\Validation\Rule;
 
@@ -23,9 +24,9 @@ trait ValidatesDocumentSigners
     protected function signerRules(string $prefix = ''): array
     {
         return [
-            "{$prefix}name" => ['required', 'string', 'max:255', 'regex:/^[\pL\'\.\-]+(\s+[\pL\'\.\-]+)+$/u'],
+            "{$prefix}name" => ['required', 'string', 'max:'.FieldLimits::PERSON_NAME, 'regex:/^[\pL\'\.\-]+(\s+[\pL\'\.\-]+)+$/u'],
             "{$prefix}channel" => ['required', Rule::enum(SignerChannel::class)],
-            "{$prefix}email" => ['nullable', 'required_if:'.$prefix.'channel,'.SignerChannel::Email->value, 'email', 'max:255'],
+            "{$prefix}email" => ['nullable', 'required_if:'.$prefix.'channel,'.SignerChannel::Email->value, 'email', 'max:'.FieldLimits::EMAIL],
             "{$prefix}phone_number" => [
                 'nullable',
                 'required_if:'.$prefix.'channel,'.SignerChannel::Whatsapp->value,

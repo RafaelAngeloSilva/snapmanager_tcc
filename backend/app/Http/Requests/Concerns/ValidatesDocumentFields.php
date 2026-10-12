@@ -5,6 +5,7 @@ namespace App\Http\Requests\Concerns;
 use App\Enums\DocumentFileType;
 use App\Enums\DocumentType;
 use App\Support\DocxInspector;
+use App\Support\FieldLimits;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -30,7 +31,7 @@ trait ValidatesDocumentFields
     protected function documentRules(int $clientId, bool $fileRequired): array
     {
         return [
-            'title' => [$fileRequired ? 'required' : 'sometimes', 'string', 'max:255'],
+            'title' => [$fileRequired ? 'required' : 'sometimes', 'string', 'max:'.FieldLimits::TITLE],
             'type' => [$fileRequired ? 'required' : 'sometimes', Rule::enum(DocumentType::class)],
             'client_id' => [
                 $fileRequired ? 'required' : 'sometimes',
@@ -48,7 +49,7 @@ trait ValidatesDocumentFields
                 Rule::exists('appointments', 'id')->where('client_id', $clientId)->whereNull('deleted_at'),
             ],
             'expires_at' => ['nullable', 'date', 'after:today', 'before_or_equal:'.now()->addDays(self::MAX_DEADLINE_DAYS)->toDateString()],
-            'notes' => ['nullable', 'string', 'max:5000'],
+            'notes' => ['nullable', 'string', 'max:'.FieldLimits::DOCUMENT_NOTES],
             // Só PDF e DOCX, em três camadas:
             //  - `extensions`: a extensão do NOME enviado (.pdf/.docx) —
             //    é ela que decide o formato (fileTypeOf);

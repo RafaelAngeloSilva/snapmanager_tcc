@@ -1,7 +1,13 @@
 import apiClient from './client';
 
-export async function fetchAppointments({ page = 1 } = {}) {
-  const response = await apiClient.get('/appointments', { params: { page } });
+export async function fetchAppointments({ page = 1, clientId } = {}) {
+  const params = { page };
+
+  if (clientId) {
+    params.client_id = clientId;
+  }
+
+  const response = await apiClient.get('/appointments', { params });
 
   return response.data;
 }

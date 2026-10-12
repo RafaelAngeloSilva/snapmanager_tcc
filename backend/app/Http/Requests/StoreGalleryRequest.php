@@ -3,8 +3,9 @@
 namespace App\Http\Requests;
 
 use App\Enums\WatermarkType;
-use Illuminate\Contracts\Validation\ValidationRule;
 use App\Http\Requests\Concerns\NormalizesExpiration;
+use App\Support\FieldLimits;
+use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -28,14 +29,15 @@ class StoreGalleryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'client_id' => ['required', 'integer', 'exists:clients,id'],
-            'order_id' => ['nullable', 'integer', 'exists:orders,id'],
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'expires_at' => ['nullable', 'date', 'after:now'],
+            'client_id' => ['required', 'integer', Rule::exists('clients', 'id')->withoutTrashed()],
+            // O pedido precisa ser do MESMO cliente da galeria.
+            'order_id' => ['nullable', 'integer', Rule::exists('orders', 'id')->where('client_id', (int) $this->input('client_id'))->withoutTrashed()],
+            'title' => ['required', 'string', 'max:'.FieldLimits::TITLE],
+            'description' => ['nullable', 'string', 'max:'.FieldLimits::DESCRIPTION],
+            'expires_at' => ['nullable', 'date', 'after:now', 'before:2100-01-01'],
             'watermark_enabled' => ['sometimes', 'boolean'],
             'watermark_type' => ['sometimes', Rule::enum(WatermarkType::class)],
-            'watermark_text' => ['nullable', 'string', 'max:255'],
+            'watermark_text' => ['nullable', 'string', 'max:'.FieldLimits::WATERMARK_TEXT],
         ];
     }
 

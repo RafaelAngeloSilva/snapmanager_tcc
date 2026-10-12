@@ -11,6 +11,7 @@ use App\Services\FileStorage;
 use App\Support\FileKeys;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
+use Laravel\Sanctum\PersonalAccessToken as SanctumToken;
 
 /**
  * Autoatendimento do próprio perfil — sem relação com o CRUD administrativo
@@ -37,7 +38,17 @@ class ProfileController extends Controller
 
     public function updatePassword(UpdateProfilePasswordRequest $request): JsonResponse
     {
-        $request->user()->update(['password' => $request->validated('password')]);
+        $user = $request->user();
+        $user->update(['password' => $request->validated('password')]);
+
+        // Senha trocada = sessões antigas encerradas: revoga todos os tokens
+        // do usuário, MENOS o desta requisição (quem trocou continua logado
+        // aqui; um aparelho perdido/invasor em outro lugar é desconectado).
+        // (Token "transitório" — sessão/testes — não é registro do banco.)
+        $current = $user->currentAccessToken();
+        $user->tokens()
+            ->when($current instanceof SanctumToken, fn ($query) => $query->whereKeyNot($current->getKey()))
+            ->delete();
 
         return response()->json(['message' => 'Senha alterada com sucesso.']);
     }
@@ -91,6 +102,6 @@ class ProfileController extends Controller
      */
     private function present(User $user): array
     {
-        return $user->only(['id', 'name', 'email', 'role', 'profile_photo_url']);
+        return $user->toAuthArray();
     }
 }

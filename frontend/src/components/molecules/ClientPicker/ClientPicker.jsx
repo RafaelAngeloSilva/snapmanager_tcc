@@ -3,6 +3,7 @@ import Input from '../../atoms/Input';
 import Spinner from '../../atoms/Spinner';
 import { fetchClients } from '../../../api/clients';
 import styles from './ClientPicker.module.css';
+import { FIELD_LIMITS } from '../../../utils/fieldLimits';
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -88,6 +89,7 @@ export default function ClientPicker({ value, onChange, error, label = 'Cliente 
           <Input
             value={term}
             onChange={(event) => setTerm(event.target.value)}
+            maxLength={FIELD_LIMITS.SEARCH}
             onFocus={() => setIsOpen(true)}
             placeholder={placeholder}
             invalid={Boolean(error)}

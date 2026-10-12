@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Support\FieldLimits;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -25,7 +26,7 @@ class UpdateProfileRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:'.FieldLimits::PERSON_NAME],
         ];
     }
 }
