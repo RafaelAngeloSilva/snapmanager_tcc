@@ -119,13 +119,12 @@ return [
     | Cadastro público
     |--------------------------------------------------------------------------
     |
-    | POST /api/register cria uma conta de ATENDENTE, com acesso a dados de
-    | clientes. Fechado por padrão: em produção as contas são criadas pela
-    | equipe. Ligue só em desenvolvimento/demonstração
-    | (REGISTRATION_ENABLED=true no .env local).
+    | POST /api/register (e o primeiro login com Google de um e-mail novo)
+    | cria uma conta de ATENDENTE. Aberto por padrão. Para fechar o cadastro
+    | público (só a equipe cria contas), defina REGISTRATION_ENABLED=false.
     |
     */
 
-    'registration_enabled' => (bool) env('REGISTRATION_ENABLED', false),
+    'registration_enabled' => (bool) env('REGISTRATION_ENABLED', true),
 
 ];

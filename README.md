@@ -167,7 +167,7 @@ O front-end (`frontend/src/utils/permissions.js` + `useAuth().can(...)`/`hasRole
 - **Vínculos coerentes**: não se cria nada para cliente excluído; o agendamento de um pedido e o pedido de uma galeria precisam ser do mesmo cliente.
 - **Excluir cliente** (soft delete) cancela, na mesma transação, os agendamentos dele ainda agendados/confirmados; concluídos e já cancelados viram histórico intacto.
 - **Senha**: 8 a 72 caracteres (limite real do bcrypt), nova senha diferente da atual (comparada com o hash), troca de senha encerra as outras sessões e redefinição encerra todas. Tokens expiram em 7 dias (`SANCTUM_TOKEN_EXPIRATION`).
-- **Cadastro público desligado por padrão** (`REGISTRATION_ENABLED`): ele cria conta de atendente, com acesso a dados de clientes.
+- **Cadastro público** pela tela "Criar conta" ou pelo Google, aberto por padrão: sempre cria conta de **atendente** (o perfil enviado é ignorado). `REGISTRATION_ENABLED=false` fecha os dois.
 - **Rate limit** (`AppServiceProvider::configureRateLimiting`): login 5/min por e-mail+IP e 20/min por IP; cadastro 10/h; esqueci/redefinir senha 5/min; troca de senha 5/min; uploads 120/min; galeria pública 600 leituras e 20 seleções por minuto.
 - **Filtros de listagem** (`?client_id=`, `?search=`...) são validados antes da consulta — texto ou array em coluna numérica responde 422, nunca 500.
 

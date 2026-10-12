@@ -50,8 +50,8 @@ POST /api/auth/google/exchange {code, nonce} ──► token Sanctum
 | E-mail igual a uma conta existente **e** e-mail verificado pelo Google | Vincula o Google à conta existente (sem duplicar) — ver abaixo o que acontece com a senha |
 | E-mail não verificado pelo Google | Recusado (`unverified_email`) |
 | E-mail já vinculado a **outra** conta Google | Recusado (`account_conflict`) |
-| Conta não existe e `REGISTRATION_ENABLED=true` | Cria conta de **atendente** sem senha local |
-| Conta não existe e cadastro fechado (produção) | Recusado (`no_account`): "peça a um administrador" |
+| Conta não existe (cadastro aberto, o padrão) | Cria conta de **atendente** sem senha local |
+| Conta não existe e `REGISTRATION_ENABLED=false` | Recusado (`no_account`): "peça a um administrador" |
 | Usuário cancela no Google | Volta ao login com "Login com Google cancelado." |
 
 **A senha antiga continua valendo?** Só se o e-mail daquela conta já tinha
@@ -165,7 +165,7 @@ Para usar SMTP (plano Pro da Railway ou outro host), basta trocar
 | `MAIL_FROM_NAME` | `SnapManager` | |
 | `SESSION_DRIVER` | `database` | Já documentado; o fluxo do Google usa sessão |
 | `SESSION_SECURE_COOKIE` | `true` | Opcional: já é o padrão quando `APP_URL` é https |
-| `REGISTRATION_ENABLED` | `false` | Contas Google novas também respeitam isso |
+| `REGISTRATION_ENABLED` | (não definir) | Cadastro aberto por padrão (tela "Criar conta" e Google). `false` fecha os dois |
 
 Nada muda na Vercel: o React não recebe Client ID nem Secret, só chama o
 back-end.

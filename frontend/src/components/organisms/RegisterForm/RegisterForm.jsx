@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import FormField from '../../molecules/FormField';
@@ -7,6 +7,9 @@ import Spinner from '../../atoms/Spinner';
 import styles from './RegisterForm.module.css';
 import { FIELD_LIMITS } from '../../../utils/fieldLimits';
 import PasswordInput from '../../atoms/PasswordInput';
+import { GoogleIcon } from '../../atoms/Icon';
+import { fetchGoogleAuthStatus } from '../../../api/auth';
+import { startGoogleLogin } from '../../../utils/googleOAuth';
 
 const EMPTY_FORM = { name: '', email: '', password: '', password_confirmation: '' };
 
@@ -18,6 +21,23 @@ export default function RegisterForm() {
   const [errors, setErrors] = useState({});
   const [generalError, setGeneralError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGoogleAvailable, setIsGoogleAvailable] = useState(false);
+  const [isRedirectingToGoogle, setIsRedirectingToGoogle] = useState(false);
+  const isBusy = isSubmitting || isRedirectingToGoogle;
+
+  // "Continuar com Google" só aparece quando o back-end está configurado.
+  // Com e-mail novo, o Google cria a conta (mesmas regras do cadastro).
+  useEffect(() => {
+    fetchGoogleAuthStatus()
+      .then((data) => setIsGoogleAvailable(Boolean(data.available)))
+      .catch(() => setIsGoogleAvailable(false));
+  }, []);
+
+  function handleGoogleSignup() {
+    if (isBusy) return;
+    setIsRedirectingToGoogle(true);
+    startGoogleLogin();
+  }
 
   function handleChange(field) {
     return (event) => setForm((prev) => ({ ...prev, [field]: event.target.value }));
@@ -25,6 +45,7 @@ export default function RegisterForm() {
 
   async function handleSubmit(event) {
     event.preventDefault();
+    if (isBusy) return;
     setErrors({});
     setGeneralError('');
     setIsSubmitting(true);
@@ -114,9 +135,31 @@ export default function RegisterForm() {
         required
       />
 
-      <Button type="submit" fullWidth isLoading={isSubmitting} className={styles.submit}>
+      <Button type="submit" fullWidth isLoading={isSubmitting} disabled={isBusy} className={styles.submit}>
         {isSubmitting ? <Spinner size="sm" /> : 'Criar conta'}
       </Button>
+
+      {isGoogleAvailable && (
+        <>
+          <div className={styles.divider}>
+            <span>ou</span>
+          </div>
+
+          <Button type="button" variant="secondary" fullWidth onClick={handleGoogleSignup} disabled={isBusy}>
+            {isRedirectingToGoogle ? (
+              <>
+                <Spinner size="sm" />
+                Autenticando…
+              </>
+            ) : (
+              <>
+                <GoogleIcon />
+                Continuar com Google
+              </>
+            )}
+          </Button>
+        </>
+      )}
 
       <p className={styles.altAction}>
         Já tem conta? <Link to="/login">Entrar</Link>
