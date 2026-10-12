@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Exceptions\StorageUnavailableException;
 use App\Exceptions\StoredFileNotFoundException;
 use App\Services\FileStorage;
+use App\Support\AwsCredentials;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 use Throwable;
@@ -40,6 +41,13 @@ class StorageHealthcheck extends Command
             $this->line('Bucket: '.(config("filesystems.disks.{$disk}.bucket") ?: '(vazio)'));
             $this->line('Credencial definida: '.(config("filesystems.disks.{$disk}.key") && config("filesystems.disks.{$disk}.secret") ? 'sim' : 'NÃO'));
             $this->line('Endpoint customizado: '.(config("filesystems.disks.{$disk}.endpoint") ? 'sim' : 'não'));
+
+            // Formato das variáveis, sem mostrar valores.
+            foreach (AwsCredentials::diagnose() as $name => $problem) {
+                $problem === null
+                    ? $this->line("  ✓ {$name}: formato OK")
+                    : $this->warn("  ✗ {$name}: {$problem}");
+            }
         }
 
         $this->line('Cache de configuração: '.(app()->configurationIsCached() ? 'SIM — rode "php artisan config:clear" se mudou o .env' : 'não'));
