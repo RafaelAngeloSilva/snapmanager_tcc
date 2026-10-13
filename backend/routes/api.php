@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CepController;
 use App\Http\Controllers\Api\ClicksignWebhookController;
 use App\Http\Controllers\Api\ClientController;
+use App\Http\Controllers\Api\ClientHistoryController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\DocumentSignatureController;
@@ -105,6 +106,17 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('role:admin,attendant,photographer')->group(function () {
         Route::apiResource('clients', ClientController::class)->only(['index', 'show']);
         Route::apiResource('appointments', AppointmentController::class)->only(['index', 'show']);
+
+        // Histórico do cliente: o fotógrafo também registra preferências e
+        // anotações (é quem mais usa). Anotações são sempre resolvidas
+        // DENTRO do cliente da rota (scopeBindings) — ver ClientHistoryController.
+        Route::get('/clients/{client}/history', [ClientHistoryController::class, 'show']);
+        Route::put('/clients/{client}/preferences', [ClientHistoryController::class, 'updatePreferences']);
+        Route::scopeBindings()->group(function () {
+            Route::post('/clients/{client}/history-entries', [ClientHistoryController::class, 'storeEntry']);
+            Route::put('/clients/{client}/history-entries/{historyEntry}', [ClientHistoryController::class, 'updateEntry']);
+            Route::delete('/clients/{client}/history-entries/{historyEntry}', [ClientHistoryController::class, 'destroyEntry']);
+        });
     });
 
     // Gestão de clientes/agenda/pedidos (criar/editar) e utilitários dos

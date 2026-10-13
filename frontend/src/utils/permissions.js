@@ -14,6 +14,10 @@ const PERMISSIONS = {
   'dashboard.view': ['admin', 'attendant'],
   'clients.read': ['admin', 'attendant', 'photographer'],
   'clients.manage': ['admin', 'attendant'],
+  // Histórico do cliente (Notas de Preferência e anotações): quem vê
+  // clientes, inclusive o fotógrafo. Editar/excluir uma anotação depende do
+  // autor — vem pronto do back-end em entry.can_edit.
+  'clients.history': ['admin', 'attendant', 'photographer'],
   'appointments.read': ['admin', 'attendant', 'photographer'],
   'appointments.manage': ['admin', 'attendant'],
   'orders.read': ['admin', 'attendant', 'photographer', 'editor'],

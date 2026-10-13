@@ -38,4 +38,12 @@ export {
   ChevronRightIcon,
   UserIcon,
   LogoutIcon,
+  SproutIcon,
+  StarIcon,
+  CrownIcon,
+  NoteIcon,
+  ContractIcon,
+  XCircleIcon,
+  SendIcon,
+  QuoteIcon,
 } from './Icon';

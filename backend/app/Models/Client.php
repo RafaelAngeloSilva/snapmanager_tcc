@@ -32,6 +32,28 @@ class Client extends Model
     ];
 
     /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            // Notas de Preferência: editadas por endpoint próprio (fora do
+            // $fillable de propósito — o formulário do cadastro não as altera).
+            'preference_notes' => 'string',
+        ];
+    }
+
+    /**
+     * Anotações manuais da linha do tempo.
+     *
+     * @return HasMany<ClientHistoryEntry, $this>
+     */
+    public function historyEntries(): HasMany
+    {
+        return $this->hasMany(ClientHistoryEntry::class);
+    }
+
+    /**
      * @return HasMany<Appointment, $this>
      */
     public function appointments(): HasMany

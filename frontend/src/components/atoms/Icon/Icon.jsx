@@ -411,3 +411,76 @@ export function ImageIcon(props) {
     </svg>
   );
 }
+
+export function SproutIcon(props) {
+  return (
+    <svg {...commonProps} {...props}>
+      <path d="M12 20v-8" />
+      <path d="M12 12c0-3.5-2.5-6-6.5-6 0 3.8 2.6 6 6.5 6Z" />
+      <path d="M12 14c0-3.2 2.3-5.5 6-5.5 0 3.4-2.4 5.5-6 5.5Z" />
+    </svg>
+  );
+}
+
+export function StarIcon(props) {
+  return (
+    <svg {...commonProps} {...props}>
+      <path d="m12 3.8 2.5 5.1 5.6.8-4 3.9.9 5.6-5-2.6-5 2.6.9-5.6-4-3.9 5.6-.8L12 3.8Z" />
+    </svg>
+  );
+}
+
+export function CrownIcon(props) {
+  return (
+    <svg {...commonProps} {...props}>
+      <path d="m4 8 4 3.5L12 5l4 6.5L20 8l-1.6 9.5H5.6L4 8Z" />
+      <path d="M6 20.5h12" />
+    </svg>
+  );
+}
+
+export function NoteIcon(props) {
+  return (
+    <svg {...commonProps} {...props}>
+      <path d="M6 3.5h9l4 4v13H6a1.5 1.5 0 0 1-1.5-1.5V5A1.5 1.5 0 0 1 6 3.5Z" />
+      <path d="M14.5 3.5V8h4.5" />
+      <path d="M8 12.5h7M8 16h5" />
+    </svg>
+  );
+}
+
+export function ContractIcon(props) {
+  return (
+    <svg {...commonProps} {...props}>
+      <path d="M7 3.5h7l4 4V20a.5.5 0 0 1-.5.5h-10A1.5 1.5 0 0 1 6 19V4.5a1 1 0 0 1 1-1Z" />
+      <path d="M13.5 3.5V8H18" />
+      <path d="M9 16.5c1-1.4 1.8-1.4 2.4 0 .5 1.1 1.2 1.1 2.1-.3" />
+    </svg>
+  );
+}
+
+export function XCircleIcon(props) {
+  return (
+    <svg {...commonProps} {...props}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="m9.2 9.2 5.6 5.6M14.8 9.2l-5.6 5.6" />
+    </svg>
+  );
+}
+
+export function SendIcon(props) {
+  return (
+    <svg {...commonProps} {...props}>
+      <path d="M20.5 3.5 10 14" />
+      <path d="m20.5 3.5-6.5 17-4-6.5-6.5-4 17-6.5Z" />
+    </svg>
+  );
+}
+
+export function QuoteIcon(props) {
+  return (
+    <svg {...commonProps} {...props}>
+      <path d="M9.5 7.5C6.6 8.3 5 10.4 5 13.4V17h4.5v-4.5H7c0-2 .9-3.1 2.5-3.6v-1.4ZM18.5 7.5c-2.9.8-4.5 2.9-4.5 5.9V17h4.5v-4.5H16c0-2 .9-3.1 2.5-3.6v-1.4Z" />
+    </svg>
+  );
+}
