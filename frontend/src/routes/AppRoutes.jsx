@@ -17,6 +17,7 @@ const GoogleCallback = lazy(() => import('../components/pages/GoogleCallback'));
 const Dashboard = lazy(() => import('../components/pages/Dashboard'));
 const DashboardReport = lazy(() => import('../components/pages/DashboardReport'));
 const Clients = lazy(() => import('../components/pages/Clients'));
+const ClientDetails = lazy(() => import('../components/pages/ClientDetails'));
 const Appointments = lazy(() => import('../components/pages/Appointments'));
 const Orders = lazy(() => import('../components/pages/Orders'));
 const Production = lazy(() => import('../components/pages/Production'));
@@ -58,6 +59,7 @@ export default function AppRoutes() {
             </Route>
             <Route element={<RequirePermission permission="clients.read" />}>
               <Route path="/clientes" element={<Clients />} />
+              <Route path="/clientes/:id" element={<ClientDetails />} />
             </Route>
             <Route element={<RequirePermission permission="appointments.read" />}>
               <Route path="/agenda" element={<Appointments />} />

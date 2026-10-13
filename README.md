@@ -191,6 +191,26 @@ Frontend (label):        "Em edição"              (utils/orderStatus.js, inalt
 
 A API continua recebendo e devolvendo os mesmos códigos de sempre (`"in_editing"`, não `"Em edição"`) — enums do PHP são nativamente serializados pelo `json_encode` como o valor puro, então nenhum contrato de API mudou. O front-end nunca viu (nem precisa ver) o enum do PHP; ele já tinha sua própria tradução para label, que continua exatamente igual.
 
+## Histórico do cliente
+
+Página do cliente (`/clientes/:id`) com resumo, selo de fidelidade, **Notas de Preferência** e **linha do tempo**.
+
+- **Selo de fidelidade** (calculado, não gravado): conta só ensaios com status *Concluído*, não excluídos e com data já passada. **0 a 2 → Novo**, **3 a 5 → Fiel**, **6 ou mais → VIP**. Cliente sem ensaios aparece como *Novo*: ele acabou de chegar, e um selo vazio pareceria erro.
+- **Eventos automáticos** são montados na consulta a partir das tabelas de origem (`ClientHistoryService`), sem copiar nada:
+
+| Evento | Origem | Data usada |
+|---|---|---|
+| Cliente cadastrado | `clients` | `created_at` |
+| Ensaio agendado / realizado / cancelado | `appointments` | criação / `starts_at` / última alteração (não há coluna de cancelamento) |
+| Pedido registrado (com valor) | `orders.total` | `created_at` |
+| Pedido entregue | `status_histories` (→ `delivered`) | data da mudança |
+| Contrato criado / enviado / assinado | `documents` (mesma visibilidade da tela de Documentos) | `created_at` / `sent_at` / `signed_at` |
+| Galeria criada / seleção concluída | `galleries` | `created_at` / `selection_completed_at` |
+
+  Não existe módulo de pagamentos, então não há evento "Pagamento recebido". Registros excluídos (soft delete) somem da linha do tempo.
+- **Anotações manuais** (`client_history_entries`): Primeiro contato, Briefing/Reunião, Dia do ensaio, Pós-venda e Observação geral. O ensaio relacionado precisa ser do mesmo cliente. "Potencial depoimento" só vale em Pós-venda.
+- **Acesso:** admin, atendimento e fotógrafo (os mesmos que veem clientes). Anotações são resolvidas dentro do cliente da URL (`scopeBindings`), e só o autor ou um admin edita ou exclui. Eventos automáticos não são editáveis. Textos rejeitam marcação HTML.
+
 ## Kanban de produção
 
 A tela **Produção** (`/producao`) é um quadro kanban ligado aos dados reais do sistema — não é um quadro de tarefas genérico ao lado do SnapManager.

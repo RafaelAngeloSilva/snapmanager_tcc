@@ -7,6 +7,32 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+.greetingBlock {
+  min-width: 0;
+  flex: 1;
+}
+
+/* Só aparece quando a sidebar vira gaveta (até 900px). */
+.menuButton {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin-right: 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.menuButton:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .greeting {
   font-size: 1rem;
   font-weight: 700;
@@ -25,6 +51,20 @@
   display: flex;
   align-items: center;
   gap: 0.85rem;
+}
+
+@media (max-width: 900px) {
+  .header {
+    padding: 0.85rem 1rem;
+  }
+
+  .menuButton {
+    display: inline-flex;
+  }
+
+  .actions {
+    gap: 0.5rem;
+  }
 }
 
 @media print {

@@ -59,6 +59,20 @@ final class FieldLimits
 
     public const STATUS_NOTE = 500;      // observação ao trocar o status do pedido
 
+    // Histórico do cliente
+    public const PREFERENCE_NOTES = 1500; // "Notas de Preferência": cabe num bloco de notas, sem virar documento
+
+    public const HISTORY_TITLE = 120;     // título curto de uma anotação da linha do tempo
+
+    public const HISTORY_NOTES = 2000;    // descrição de uma anotação (mesmo teto das observações)
+
+    /**
+     * Texto livre não pode conter marcação HTML ("<b", "</", "<!--", "<script").
+     * O React já escapa tudo na tela; isto evita guardar HTML que outro
+     * consumidor (e-mail, PDF, exportação) poderia interpretar.
+     */
+    public const NO_HTML_PATTERN = '/<\s*\/?\s*[a-z!?]/i';
+
     // Busca e filtros
     public const SEARCH = 100;
 

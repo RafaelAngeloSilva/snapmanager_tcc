@@ -27,7 +27,7 @@ const NAV_LINKS = [
   { to: '/documentos', label: 'Documentos', icon: <DocumentsIcon />, permission: 'documents.read' },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen = false, id }) {
   const { user, logout, can } = useAuth();
   const navigate = useNavigate();
   const visibleLinks = NAV_LINKS.filter((link) => can(link.permission));
@@ -38,7 +38,7 @@ export default function Sidebar() {
   }
 
   return (
-    <aside className={styles.sidebar}>
+    <aside id={id} className={`${styles.sidebar} ${isOpen ? styles.open : ''}`}>
       <div className={styles.brand}>
         <img src={logo} alt="SnapManager" className={styles.brandLogo} />
       </div>

@@ -28,6 +28,7 @@ class ClientResource extends JsonResource
             'city' => $this->city,
             'state' => $this->state,
             'notes' => $this->notes,
+            'preference_notes' => $this->preference_notes,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

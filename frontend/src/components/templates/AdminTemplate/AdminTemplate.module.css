@@ -19,6 +19,25 @@
   margin: 0 auto;
 }
 
+/* Fundo escuro atrás da gaveta (só existe com ela aberta, no celular). */
+.backdrop {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .content {
+    padding: 1.25rem 1rem 2rem;
+  }
+
+  .backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background: rgba(10, 12, 18, 0.45);
+  }
+}
+
 @media print {
   .content {
     padding: 0;

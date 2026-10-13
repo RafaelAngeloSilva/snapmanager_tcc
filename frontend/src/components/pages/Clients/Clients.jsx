@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { fetchClients } from '../../../api/clients';
 import Card from '../../atoms/Card';
 import Spinner from '../../atoms/Spinner';
@@ -8,7 +9,6 @@ import Pagination from '../../molecules/Pagination';
 import ClientsToolbar from '../../organisms/ClientsToolbar';
 import ClientsTable from '../../organisms/ClientsTable';
 import ClientFormModal from '../../organisms/ClientFormModal';
-import ClientDetailsModal from '../../organisms/ClientDetailsModal';
 import DeleteClientDialog from '../../organisms/DeleteClientDialog';
 import styles from './Clients.module.css';
 import { useAuth } from '../../../context/AuthContext';
@@ -16,6 +16,7 @@ import { useAuth } from '../../../context/AuthContext';
 const SEARCH_DEBOUNCE_MS = 350;
 
 export default function Clients() {
+  const navigate = useNavigate();
   const { can } = useAuth();
   const [clients, setClients] = useState([]);
   const [meta, setMeta] = useState({ current_page: 1, last_page: 1 });
@@ -26,7 +27,6 @@ export default function Clients() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const [formModal, setFormModal] = useState({ isOpen: false, client: null });
-  const [detailsModal, setDetailsModal] = useState({ isOpen: false, clientId: null });
   const [deleteDialog, setDeleteDialog] = useState({ isOpen: false, client: null });
 
   // Guarda a requisição em andamento pra poder cancelá-la se uma busca mais
@@ -96,13 +96,9 @@ export default function Clients() {
     setFormModal({ isOpen: true, client });
   }
 
-  function handleEditFromDetails(client) {
-    setDetailsModal({ isOpen: false, clientId: null });
-    setFormModal({ isOpen: true, client });
-  }
-
+  // Ver = página do cliente (resumo, selo de fidelidade e Histórico).
   function handleView(client) {
-    setDetailsModal({ isOpen: true, clientId: client.id });
+    navigate(`/clientes/${client.id}`);
   }
 
   function handleDeleteClick(client) {
@@ -195,13 +191,6 @@ export default function Clients() {
         client={formModal.client}
         onClose={() => setFormModal({ isOpen: false, client: null })}
         onSaved={handleSaved}
-      />
-
-      <ClientDetailsModal
-        isOpen={detailsModal.isOpen}
-        clientId={detailsModal.clientId}
-        onClose={() => setDetailsModal({ isOpen: false, clientId: null })}
-        onEdit={handleEditFromDetails}
       />
 
       <DeleteClientDialog

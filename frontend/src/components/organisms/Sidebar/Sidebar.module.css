@@ -88,6 +88,28 @@
   justify-content: flex-start;
 }
 
+/* Celular/tablet: gaveta sobre o conteúdo, aberta pelo botão do Header. */
+@media (max-width: 900px) {
+  .sidebar {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 50;
+    height: 100dvh;
+    width: min(280px, 85vw);
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform var(--transition-base), visibility 0s linear 200ms;
+    box-shadow: var(--shadow-xl);
+  }
+
+  .open {
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform var(--transition-base);
+  }
+}
+
 @media print {
   .sidebar {
     display: none;
