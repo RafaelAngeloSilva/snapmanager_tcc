@@ -12,6 +12,14 @@ const dateFormatter = new Intl.DateTimeFormat('pt-BR', {
   month: 'long',
 });
 
+// Intl devolve "terça-feira, 27 de outubro": só a primeira letra vai em
+// maiúscula ("Terça-feira, 27 de outubro"), como em português.
+function formatToday() {
+  const text = dateFormatter.format(new Date());
+
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 export default function Header({ isNavOpen = false, navId, onToggleNav }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -40,7 +48,7 @@ export default function Header({ isNavOpen = false, navId, onToggleNav }) {
 
       <div className={styles.greetingBlock}>
         <p className={styles.greeting}>{firstName ? `Olá, ${firstName}` : 'Olá'}</p>
-        <p className={styles.date}>{dateFormatter.format(new Date())}</p>
+        <p className={styles.date}>{formatToday()}</p>
       </div>
 
       <div className={styles.actions}>
