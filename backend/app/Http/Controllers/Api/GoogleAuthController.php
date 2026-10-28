@@ -44,6 +44,11 @@ class GoogleAuthController extends Controller
 {
     private const SESSION_NONCE = 'google_oauth_nonce';
 
+    /** "login" (Entrar com Google) ou "signup" (Cadastrar com Google). */
+    private const SESSION_INTENT = 'google_oauth_intent';
+
+    private const INTENTS = ['login', 'signup'];
+
     private const CODE_TTL_SECONDS = 60;
 
     /** base64url de 32 bytes = 43 caracteres. */
@@ -83,7 +88,12 @@ class GoogleAuthController extends Controller
             return $this->backToLogin('invalid_request');
         }
 
+        // Intenção explícita: só "signup" pode criar conta. Qualquer valor
+        // diferente (ou ausente) vale como "login" — o mais restritivo.
+        $intent = in_array($request->query('intent'), self::INTENTS, true) ? $request->query('intent') : 'login';
+
         $request->session()->put(self::SESSION_NONCE, hash('sha256', $nonce));
+        $request->session()->put(self::SESSION_INTENT, $intent);
 
         return Socialite::driver('google')
             ->scopes(['openid', 'profile', 'email'])
@@ -100,8 +110,9 @@ class GoogleAuthController extends Controller
             return $this->backToLogin('failed');
         }
 
-        // Nonce de uso único: sai da sessão já na primeira volta.
+        // Nonce e intenção de uso único: saem da sessão já na primeira volta.
         $nonceHash = $request->session()->pull(self::SESSION_NONCE);
+        $intent = $request->session()->pull(self::SESSION_INTENT) === 'signup' ? 'signup' : 'login';
 
         try {
             // Usuário clicou em "Cancelar" (ou o Google recusou): o Google
@@ -127,11 +138,11 @@ class GoogleAuthController extends Controller
                 throw new GoogleLoginException('failed');
             }
 
-            $user = $this->accounts->resolveUser($googleUser);
+            $user = $this->accounts->resolveUser($googleUser, allowSignup: $intent === 'signup');
         } catch (GoogleLoginException $e) {
-            Log::info('Login com Google não concluído.', ['reason' => $e->reason]);
+            Log::info('Login com Google não concluído.', ['reason' => $e->reason, 'intent' => $intent]);
 
-            return $this->backToLogin($e->reason);
+            return $this->backToLogin($e->reason, $intent);
         }
 
         $code = Str::random(64);
@@ -185,10 +196,12 @@ class GoogleAuthController extends Controller
         return rtrim((string) config('app.frontend_url'), '/');
     }
 
-    private function backToLogin(string $reason): RedirectResponse
+    private function backToLogin(string $reason, string $intent = 'login'): RedirectResponse
     {
         $reason = in_array($reason, GoogleLoginException::REASONS, true) ? $reason : 'failed';
+        // Erro no cadastro volta para a tela de cadastro; no login, para o login.
+        $page = $intent === 'signup' ? '/register' : '/login';
 
-        return redirect()->away($this->frontendUrl().'/login?google_error='.$reason);
+        return redirect()->away($this->frontendUrl().$page.'?google_error='.$reason);
     }
 }

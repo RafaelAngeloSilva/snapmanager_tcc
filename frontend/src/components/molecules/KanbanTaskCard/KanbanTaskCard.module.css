@@ -1,8 +1,9 @@
 .card {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
-  padding: 0.85rem 0.9rem;
+  gap: 0.5rem;
+  padding: 0.75rem 0.85rem 0.7rem;
+  min-width: 0;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -52,6 +53,24 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  min-height: 1.25rem;
+}
+
+/* Selo de origem (Pedido/Agendamento/Demanda) mais discreto dentro do card:
+   identifica sem competir com o título. */
+.header > span:first-child {
+  padding: 0.12rem 0.5rem;
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+}
+
+/* Título + cliente como um bloco: alinhados à mesma margem esquerda e
+   com espaço menor entre si do que entre os blocos do card. */
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
 }
 
 .doneIcon {
@@ -61,16 +80,28 @@
 
 .title {
   margin: 0;
-  font-size: 0.88rem;
-  font-weight: 600;
-  line-height: 1.35;
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
   color: var(--color-text);
+  /* Títulos longos: até 2 linhas, depois "…" (texto completo no title/modal). */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 .client {
   margin: 0;
   font-size: 0.78rem;
+  line-height: 1.35;
   color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .meta {
@@ -87,7 +118,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  margin-top: 0.2rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid var(--color-border);
 }
 
 .footerLeft {

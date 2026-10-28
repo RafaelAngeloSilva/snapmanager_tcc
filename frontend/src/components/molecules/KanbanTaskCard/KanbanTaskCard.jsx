@@ -37,9 +37,16 @@ export function KanbanTaskCardView({ task, className = '', innerRef, style, isOv
         )}
       </header>
 
-      <h3 className={styles.title}>{task.title}</h3>
-
-      {task.client && <p className={styles.client}>{task.client.name}</p>}
+      <div className={styles.body}>
+        <h3 className={styles.title} title={task.title}>
+          {task.title}
+        </h3>
+        {task.client && (
+          <p className={styles.client} title={task.client.name}>
+            {task.client.name}
+          </p>
+        )}
+      </div>
 
       {appointmentDate && (
         <p className={styles.meta}>

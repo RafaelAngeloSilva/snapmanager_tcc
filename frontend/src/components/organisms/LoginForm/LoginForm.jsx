@@ -150,7 +150,7 @@ export default function LoginForm() {
             ) : (
               <>
                 <GoogleIcon />
-                Continuar com Google
+                Entrar com Google
               </>
             )}
           </Button>

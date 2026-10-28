@@ -37,7 +37,7 @@ export default function GoogleCallback() {
 
     exchangeGoogleCode(code, nonce)
       .then((data) => {
-        loginWithToken(data.token);
+        loginWithToken(data.token, data.user);
         navigate('/', { replace: true });
       })
       .catch((err) => {
