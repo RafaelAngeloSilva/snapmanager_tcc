@@ -322,7 +322,8 @@ class ClientHistoryTest extends TestCase
         $url = "/api/clients/{$this->client->id}/history-entries/{$id}";
 
         $this->actingAsRole('attendant');
-        $this->getJson("/api/clients/{$this->client->id}/history")->assertJsonPath('data.timeline.0.entry.can_edit', false);
+        $manual = collect($this->getJson("/api/clients/{$this->client->id}/history")->json('data.timeline'))->firstWhere('source', 'manual');
+        $this->assertFalse($manual['entry']['can_edit']);
         $this->putJson($url, $this->entryPayload(['title' => 'Alterado']))->assertForbidden();
         $this->deleteJson($url)->assertForbidden();
 

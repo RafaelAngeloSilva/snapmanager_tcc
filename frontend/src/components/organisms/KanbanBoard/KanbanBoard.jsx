@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   DndContext,
   DragOverlay,
@@ -63,6 +63,31 @@ export default function KanbanBoard({
   onError,
 }) {
   const [activeTask, setActiveTask] = useState(null);
+  const boardRef = useRef(null);
+
+  // Só visual: informa ao CSS onde o quadro começa na página, para que em
+  // telas largas ele ocupe o resto da janela e a barra de rolagem
+  // horizontal fique à vista (ver KanbanBoard.module.css). Não interfere no
+  // arrasto: o dnd-kit continua rolando o quadro e as colunas normalmente.
+  useEffect(() => {
+    const board = boardRef.current;
+    if (!board) return undefined;
+
+    function updateOffset() {
+      const top = board.getBoundingClientRect().top + window.scrollY;
+      board.style.setProperty('--kanban-board-offset', `${Math.round(top + 24)}px`);
+    }
+
+    updateOffset();
+    window.addEventListener('resize', updateOffset);
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateOffset) : null;
+    if (board.parentElement) observer?.observe(board.parentElement);
+
+    return () => {
+      window.removeEventListener('resize', updateOffset);
+      observer?.disconnect();
+    };
+  }, []);
 
   // Arranjo do quadro no início do arrasto — usado para desfazer se a API falhar.
   const snapshotRef = useRef(null);
@@ -189,7 +214,7 @@ export default function KanbanBoard({
       onDragEnd={handleDragEnd}
       onDragCancel={handleDragCancel}
     >
-      <div className={styles.board}>
+      <div ref={boardRef} className={styles.board}>
         {columns.map((column, index) => (
           <KanbanColumn
             key={column.id}

@@ -3,11 +3,56 @@
   gap: 1rem;
   align-items: flex-start;
   overflow-x: auto;
-  padding-bottom: 0.75rem;
+  /* Espaço para a barra não encostar nas colunas. */
+  padding-bottom: 0.9rem;
   /* Rolagem horizontal só do quadro — a página em si não rola para o lado. */
   scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+  /* Barra discreta e nas cores do tema (claro/escuro). Firefox e Chrome 121+
+     usam estas propriedades padrão; os ::-webkit-scrollbar abaixo cobrem
+     Safari e navegadores mais antigos. */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border-strong) transparent;
+  transition: scrollbar-color var(--transition-base);
+}
+
+.board:hover,
+.board:focus-within {
+  scrollbar-color: var(--color-text-muted) transparent;
+}
+
+.board::-webkit-scrollbar {
+  height: 8px;
+}
+
+.board::-webkit-scrollbar-track {
+  margin: 0 0.25rem;
+  border-radius: var(--radius-full);
+  background: transparent;
+}
+
+.board::-webkit-scrollbar-thumb {
+  border-radius: var(--radius-full);
+  background: var(--color-border-strong);
+}
+
+.board::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
 }
 
 .board > * {
   scroll-snap-align: start;
+}
+
+/* Telas largas: o quadro ocupa a altura disponível da janela, então a
+   barra horizontal fica sempre à vista (antes ela ia para o fim da página
+   e só aparecia depois de rolar até lá). Colunas longas rolam por dentro. */
+@media (min-width: 901px) and (min-height: 640px) {
+  .board {
+    height: max(26rem, calc(100dvh - var(--kanban-board-offset, 16.5rem)));
+  }
+
+  .board > * {
+    max-height: 100%;
+  }
 }

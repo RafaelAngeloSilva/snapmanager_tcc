@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Storage;
+use Laravel\Sanctum\PersonalAccessToken;
 use Laravel\Socialite\Contracts\Factory;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\GoogleProvider;
@@ -119,9 +120,9 @@ class AuthenticationFlowsTest extends TestCase
     }
 
     /** Simula a volta do Google para o callback (com o nonce na sessão). */
-    private function googleCallback(array $query = ['code' => 'codigo-do-google', 'state' => 'xyz'], ?string $nonce = self::NONCE)
+    private function googleCallback(array $query = ['code' => 'codigo-do-google', 'state' => 'xyz'], ?string $nonce = self::NONCE, string $intent = 'login')
     {
-        $session = $nonce === null ? [] : ['google_oauth_nonce' => hash('sha256', $nonce)];
+        $session = $nonce === null ? [] : ['google_oauth_nonce' => hash('sha256', $nonce), 'google_oauth_intent' => $intent];
 
         return $this->withSession($session)->get('/auth/google/callback?'.http_build_query($query));
     }
@@ -133,6 +134,19 @@ class AuthenticationFlowsTest extends TestCase
         $this->assertStringNotContainsString('token', $location, 'O token de acesso nunca vai na URL.');
 
         return substr($location, strpos($location, '#code=') + 6);
+    }
+
+    private function signupErrorFrom($response): string
+    {
+        $location = (string) $response->headers->get('Location');
+        $this->assertStringStartsWith('https://snapmanager.vercel.app/register?google_error=', $location);
+
+        return substr($location, strlen('https://snapmanager.vercel.app/register?google_error='));
+    }
+
+    private function signupCallback()
+    {
+        return $this->googleCallback(intent: 'signup');
     }
 
     private function loginErrorFrom($response): string
@@ -160,7 +174,7 @@ class AuthenticationFlowsTest extends TestCase
         config(['auth.registration_enabled' => true]);
         $this->mockGoogle($this->googleUser());
 
-        $code = $this->codeFrom($this->googleCallback());
+        $code = $this->codeFrom($this->signupCallback());
 
         $this->postJson('/api/auth/google/exchange', ['code' => $code, 'nonce' => self::NONCE])
             ->assertOk()
@@ -181,8 +195,50 @@ class AuthenticationFlowsTest extends TestCase
         config(['auth.registration_enabled' => false]);
         $this->mockGoogle($this->googleUser());
 
-        $this->assertSame('no_account', $this->loginErrorFrom($this->googleCallback()));
+        $this->assertSame('registration_closed', $this->signupErrorFrom($this->signupCallback()));
         $this->assertDatabaseMissing('users', ['email' => 'maria@gmail.com']);
+    }
+
+    public function test_login_with_google_never_creates_an_account_nor_issues_a_token(): void
+    {
+        config(['auth.registration_enabled' => true]);   // mesmo com o cadastro aberto
+        $this->mockGoogle($this->googleUser());
+
+        $response = $this->googleCallback();
+
+        $this->assertSame('no_account', $this->loginErrorFrom($response));
+        $this->assertStringNotContainsString('#code=', (string) $response->headers->get('Location'));
+        $this->assertSame(0, User::count());
+        $this->assertSame(0, PersonalAccessToken::count());
+    }
+
+    public function test_login_intent_is_the_default_and_unknown_intents_are_treated_as_login(): void
+    {
+        $this->mockGoogle($this->googleUser());
+
+        $this->get('/auth/google/redirect?nonce='.self::NONCE)->assertSessionHas('google_oauth_intent', 'login');
+        $this->get('/auth/google/redirect?nonce='.self::NONCE.'&intent=admin')->assertSessionHas('google_oauth_intent', 'login');
+        $this->get('/auth/google/redirect?nonce='.self::NONCE.'&intent=signup')->assertSessionHas('google_oauth_intent', 'signup');
+
+        // Sem intenção na sessão (ex.: sessão antiga): vale login — não cria conta.
+        config(['auth.registration_enabled' => true]);
+        $this->flushSession();
+        $response = $this->withSession(['google_oauth_nonce' => hash('sha256', self::NONCE)])->get('/auth/google/callback?code=x&state=xyz');
+        $this->assertSame('no_account', $this->loginErrorFrom($response));
+        $this->assertSame(0, User::count());
+    }
+
+    public function test_signup_with_google_for_an_existing_account_just_logs_in(): void
+    {
+        config(['auth.registration_enabled' => true]);
+        $user = User::factory()->create(['email' => 'maria@gmail.com']);
+        $this->mockGoogle($this->googleUser());
+
+        $code = $this->codeFrom($this->signupCallback());
+
+        $this->postJson('/api/auth/google/exchange', ['code' => $code, 'nonce' => self::NONCE])
+            ->assertOk()->assertJsonPath('user.id', $user->id);
+        $this->assertSame(1, User::count());
     }
 
     public function test_already_linked_google_account_logs_in_the_same_user_even_if_the_email_changed(): void
@@ -313,13 +369,13 @@ class AuthenticationFlowsTest extends TestCase
         Http::fake(['lh3.googleusercontent.com/*' => Http::response($png, 200, ['Content-Type' => 'image/png'])]);
 
         $this->mockGoogle($this->googleUser(['picture' => 'https://lh3.googleusercontent.com/a/foto']));
-        $code = $this->codeFrom($this->googleCallback());
+        $code = $this->codeFrom($this->signupCallback());
         $this->postJson('/api/auth/google/exchange', ['code' => $code, 'nonce' => self::NONCE])->assertOk();
         $this->assertNotNull(User::where('email', 'maria@gmail.com')->value('profile_photo_path'));
 
         // Host que não é do Google: nem é baixado (evita SSRF).
         $this->mockGoogle($this->googleUser(['sub' => 'outro', 'email' => 'jose@gmail.com', 'picture' => 'https://169.254.169.254/latest/meta-data']));
-        $code = $this->codeFrom($this->googleCallback());
+        $code = $this->codeFrom($this->signupCallback());
         $this->postJson('/api/auth/google/exchange', ['code' => $code, 'nonce' => self::NONCE])->assertOk();
         $this->assertNull(User::where('email', 'jose@gmail.com')->value('profile_photo_path'));
         Http::assertSentCount(1);

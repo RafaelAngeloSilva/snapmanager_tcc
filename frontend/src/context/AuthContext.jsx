@@ -53,9 +53,13 @@ export function AuthProvider({ children }) {
   // Usado pelo callback do login com Google: o token já vem pronto (emitido
   // pelo backend após o handshake OAuth), só precisa ser guardado — o efeito
   // acima cuida de buscar o perfil do usuário a partir dele.
-  function loginWithToken(newToken) {
+  // Login com Google: o token (e o usuário) chegam prontos da troca do
+  // código. Com o usuário em mãos, nenhuma tela espera um /me extra.
+  function loginWithToken(newToken, newUser = null) {
     localStorage.setItem(TOKEN_STORAGE_KEY, newToken);
     setToken(newToken);
+    setUserLoadFailed(false);
+    setUser(newUser);
   }
 
   async function logout() {

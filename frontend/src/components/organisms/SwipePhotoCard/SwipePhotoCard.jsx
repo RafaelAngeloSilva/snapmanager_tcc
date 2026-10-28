@@ -1,37 +1,49 @@
 import { useRef, useState } from 'react';
+import { SWIPE, classifyRelease, decisionThreshold, horizontalVelocity, lockAxis, visualOffset } from '../../../utils/swipeGesture';
 import styles from './SwipePhotoCard.module.css';
-
-/** Distância máxima (px) e tempo para um toque contar como "toque", não arrasto. */
-const TAP_DISTANCE = 6;
-const TAP_DURATION = 300;
-
-/** A partir de quanto o gesto vira decisão (limitado para telas grandes). */
-function decisionThreshold(width) {
-  return Math.min(130, Math.max(60, width * 0.28));
-}
 
 /**
  * Cartão de uma foto no SnapSwipe.
  *
  * Gestos com Pointer Events, então funciona igual com dedo, mouse e caneta.
  * `touch-action: pan-y` (no CSS) mantém a rolagem vertical da página
- * funcionando: só o movimento horizontal é tratado aqui. Um gesto que
- * começa vertical é abandonado, para não brigar com a rolagem.
- *
- * O cartão só decide ao SOLTAR e passando do limite — arrastar um pouco e
- * voltar não seleciona nada. Passar NUNCA apaga a foto: é só "não escolher
- * agora".
+ * funcionando. A sensibilidade (zona morta, trava de eixo, distância e
+ * "peteleco") está toda em utils/swipeGesture.js:
+ *  - tremidas de até SWIPE.DEAD_ZONE px não mexem o cartão;
+ *  - ao sair da zona morta o eixo é travado: inclinado demais = rolagem,
+ *    e o cartão é abandonado;
+ *  - só decide ao SOLTAR: passou do limite de distância, ou foi um
+ *    peteleco rápido com distância mínima, na mesma direção.
+ * Passar NUNCA apaga a foto: é só "não escolher agora".
  */
+// set/releasePointerCapture lançam erro quando o navegador já liberou o
+// ponteiro (ex.: o dedo saiu da tela durante uma rolagem). Isso nunca pode
+// interromper o reconhecimento do gesto.
+function safePointerCapture(event, action) {
+  try {
+    if (action === 'set') event.currentTarget.setPointerCapture?.(event.pointerId);
+    else event.currentTarget.releasePointerCapture?.(event.pointerId);
+  } catch {
+    // ponteiro já liberado: nada a fazer
+  }
+}
+
 export default function SwipePhotoCard({ image, position, total, isSelected, isTop, disabled, onDecide, onExpand }) {
   const cardRef = useRef(null);
   const gesture = useRef(null);
+  // Garante uma única decisão por gesto (pointerup + pointercancel, toques
+  // repetidos durante a animação de saída...).
+  const deciding = useRef(false);
   const [offset, setOffset] = useState(0);
   const [exiting, setExiting] = useState(null);
 
-  const threshold = decisionThreshold(cardRef.current?.offsetWidth ?? 320);
-  const intent = Math.abs(offset) > 12 ? (offset > 0 ? 'select' : 'skip') : null;
+  const threshold = decisionThreshold(cardRef.current?.offsetWidth);
+  const intent = Math.abs(offset) > SWIPE.HINT_DISTANCE ? (offset > 0 ? 'select' : 'skip') : null;
 
   function finish(direction) {
+    if (deciding.current) return;
+    deciding.current = true;
+
     setExiting(direction);
     setOffset(0);
 
@@ -40,52 +52,85 @@ export default function SwipePhotoCard({ image, position, total, isSelected, isT
     // vira só um respiro curto.
     window.setTimeout(() => {
       setExiting(null);
+      deciding.current = false;
       onDecide(direction);
     }, 180);
   }
 
   function handlePointerDown(event) {
-    if (disabled || !isTop || exiting || event.button > 0) return;
+    if (disabled || !isTop || exiting || deciding.current || event.button > 0) return;
 
-    gesture.current = { id: event.pointerId, x: event.clientX, y: event.clientY, at: Date.now(), active: true };
-    event.currentTarget.setPointerCapture?.(event.pointerId);
+    const now = event.timeStamp || performance.now();
+
+    gesture.current = {
+      id: event.pointerId,
+      x: event.clientX,
+      y: event.clientY,
+      at: now,
+      axis: 'pending',
+      samples: [{ x: event.clientX, t: now }],
+    };
+    safePointerCapture(event, 'set');
   }
 
   function handlePointerMove(event) {
     const current = gesture.current;
 
-    if (!current?.active || current.id !== event.pointerId) return;
+    if (!current || current.id !== event.pointerId || current.axis === 'vertical') return;
 
     const dx = event.clientX - current.x;
     const dy = event.clientY - current.y;
+    const now = event.timeStamp || performance.now();
 
-    // Gesto claramente vertical: é rolagem da página, não decisão.
-    if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 12) {
-      gesture.current.active = false;
+    current.samples.push({ x: event.clientX, t: now });
+    if (current.samples.length > 20) current.samples.shift();
+
+    if (current.axis === 'pending') {
+      current.axis = lockAxis(dx, dy);
+    }
+
+    // Gesto inclinado demais: é rolagem da página, não decisão.
+    if (current.axis === 'vertical') {
       setOffset(0);
 
       return;
     }
 
-    setOffset(dx);
+    setOffset(current.axis === 'horizontal' ? visualOffset(dx) : 0);
   }
 
   function handlePointerUp(event) {
     const current = gesture.current;
     gesture.current = null;
 
-    event.currentTarget.releasePointerCapture?.(event.pointerId);
+    safePointerCapture(event, 'release');
 
-    if (!current?.active) {
+    if (!current || current.id !== event.pointerId) {
       setOffset(0);
 
       return;
     }
 
-    const dx = event.clientX - current.x;
-    const isTap = Math.abs(dx) < TAP_DISTANCE && Date.now() - current.at < TAP_DURATION;
+    // Cancelado pelo navegador (ex.: virou rolagem): nunca decide nem amplia.
+    if (event.type === 'pointercancel') {
+      setOffset(0);
 
-    if (isTap) {
+      return;
+    }
+
+    const now = event.timeStamp || performance.now();
+    current.samples.push({ x: event.clientX, t: now });
+
+    const result = classifyRelease({
+      dx: event.clientX - current.x,
+      dy: event.clientY - current.y,
+      duration: now - current.at,
+      velocity: horizontalVelocity(current.samples),
+      width: cardRef.current?.offsetWidth,
+      axis: current.axis,
+    });
+
+    if (result === 'tap') {
       setOffset(0);
       // Toque simples amplia (avaliar detalhe), nunca seleciona.
       onExpand();
@@ -93,8 +138,8 @@ export default function SwipePhotoCard({ image, position, total, isSelected, isT
       return;
     }
 
-    if (Math.abs(dx) >= threshold) {
-      finish(dx > 0 ? 'select' : 'skip');
+    if (result === 'select' || result === 'skip') {
+      finish(result);
 
       return;
     }

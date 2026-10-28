@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import FormField from '../../molecules/FormField';
 import Button from '../../atoms/Button';
@@ -9,13 +9,14 @@ import { FIELD_LIMITS } from '../../../utils/fieldLimits';
 import PasswordInput from '../../atoms/PasswordInput';
 import { GoogleIcon } from '../../atoms/Icon';
 import { fetchGoogleAuthStatus } from '../../../api/auth';
-import { startGoogleLogin } from '../../../utils/googleOAuth';
+import { googleErrorMessage, startGoogleLogin } from '../../../utils/googleOAuth';
 
 const EMPTY_FORM = { name: '', email: '', password: '', password_confirmation: '' };
 
 export default function RegisterForm() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
@@ -25,7 +26,13 @@ export default function RegisterForm() {
   const [isRedirectingToGoogle, setIsRedirectingToGoogle] = useState(false);
   const isBusy = isSubmitting || isRedirectingToGoogle;
 
-  // "Continuar com Google" só aparece quando o back-end está configurado.
+  // Erro vindo do "Cadastrar com Google" (/register?google_error=...).
+  useEffect(() => {
+    const reason = searchParams.get('google_error');
+    if (reason) setGeneralError(googleErrorMessage(reason));
+  }, [searchParams]);
+
+  // "Cadastrar com Google" só aparece quando o back-end está configurado.
   // Com e-mail novo, o Google cria a conta (mesmas regras do cadastro).
   useEffect(() => {
     fetchGoogleAuthStatus()
@@ -36,7 +43,8 @@ export default function RegisterForm() {
   function handleGoogleSignup() {
     if (isBusy) return;
     setIsRedirectingToGoogle(true);
-    startGoogleLogin();
+    // "Cadastrar com Google": o único caminho que cria conta pelo Google.
+    startGoogleLogin('signup');
   }
 
   function handleChange(field) {
@@ -154,7 +162,7 @@ export default function RegisterForm() {
             ) : (
               <>
                 <GoogleIcon />
-                Continuar com Google
+                Cadastrar com Google
               </>
             )}
           </Button>

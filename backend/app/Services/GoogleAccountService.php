@@ -46,7 +46,7 @@ class GoogleAccountService
     /**
      * @throws GoogleLoginException
      */
-    public function resolveUser(SocialiteUser $google): User
+    public function resolveUser(SocialiteUser $google, bool $allowSignup = false): User
     {
         $googleId = (string) $google->getId();
         $email = mb_strtolower(trim((string) $google->getEmail()));
@@ -62,7 +62,7 @@ class GoogleAccountService
             throw new GoogleLoginException('unverified_email');
         }
 
-        [$user, $created] = DB::transaction(function () use ($googleId, $email, $google) {
+        [$user, $created] = DB::transaction(function () use ($googleId, $email, $google, $allowSignup) {
             if ($user = User::where('google_id', $googleId)->lockForUpdate()->first()) {
                 return [$user, false];
             }
@@ -99,8 +99,16 @@ class GoogleAccountService
                 return [$user, false];
             }
 
-            if (! config('auth.registration_enabled')) {
+            // "Entrar com Google" só autentica contas que JÁ existem: sem
+            // conta, nada é criado e nenhum token é emitido. Criar conta é
+            // exclusivo do "Cadastrar com Google" (tela Criar conta), e só
+            // com o cadastro público aberto.
+            if (! $allowSignup) {
                 throw new GoogleLoginException('no_account');
+            }
+
+            if (! config('auth.registration_enabled')) {
+                throw new GoogleLoginException('registration_closed');
             }
 
             $name = trim((string) ($google->getName() ?: $google->getNickname() ?: strstr($email, '@', true)));

@@ -1,8 +1,13 @@
 import Button from '../../atoms/Button';
+import ActionMenu from '../ActionMenu';
 import { ChevronLeftIcon, ChevronRightIcon, EditIcon, PlusIcon, TrashIcon } from '../../atoms/Icon';
 import styles from './KanbanColumnHeader.module.css';
 
 /**
+ * Cabeçalho compacto: "+" (nova tarefa) sempre à vista e as ações de
+ * administração (mover, editar, excluir) no menu "⋯" — com os cinco
+ * botões soltos, nomes como "EM ANDAMENTO" eram cortados.
+ *
  * A ordem das colunas é alterada por botões, e não por arrasto: o arrasto
  * dentro do quadro já significa "mover card", e sobrecarregar o mesmo gesto
  * tornaria fácil bagunçar o quadro sem querer. Botões também funcionam por
@@ -23,7 +28,7 @@ export default function KanbanColumnHeader({
   return (
     <header className={styles.header}>
       <div className={styles.titleRow}>
-        <h2 className={styles.title}>
+        <h2 className={styles.title} title={column.name}>
           {column.name}
           {column.is_done && (
             <span className={styles.doneTag} title="Tarefas nesta coluna são marcadas como concluídas">
@@ -41,32 +46,27 @@ export default function KanbanColumnHeader({
           </Button>
         )}
         {canManage && (
-          <>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onMove(column, -1)}
-              disabled={!canMoveLeft}
-              aria-label={`Mover ${column.name} para a esquerda`}
-            >
-              <ChevronLeftIcon width={15} height={15} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => onMove(column, 1)}
-              disabled={!canMoveRight}
-              aria-label={`Mover ${column.name} para a direita`}
-            >
-              <ChevronRightIcon width={15} height={15} />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => onEdit(column)} aria-label={`Editar ${column.name}`}>
-              <EditIcon width={15} height={15} />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={() => onDelete(column)} aria-label={`Excluir ${column.name}`}>
-              <TrashIcon width={15} height={15} />
-            </Button>
-          </>
+          <ActionMenu
+            label={`Mais ações para a coluna ${column.name}`}
+            items={[
+              {
+                key: 'left',
+                label: 'Mover para a esquerda',
+                icon: <ChevronLeftIcon width={15} height={15} />,
+                onSelect: () => onMove(column, -1),
+                disabled: !canMoveLeft,
+              },
+              {
+                key: 'right',
+                label: 'Mover para a direita',
+                icon: <ChevronRightIcon width={15} height={15} />,
+                onSelect: () => onMove(column, 1),
+                disabled: !canMoveRight,
+              },
+              { key: 'edit', label: 'Editar coluna', icon: <EditIcon width={15} height={15} />, onSelect: () => onEdit(column) },
+              { key: 'delete', label: 'Excluir coluna', icon: <TrashIcon width={15} height={15} />, onSelect: () => onDelete(column) },
+            ]}
+          />
         )}
       </div>
     </header>

@@ -19,7 +19,8 @@ class GoogleLoginException extends RuntimeException
         'invalid_profile',  // resposta do Google sem id/e-mail válidos
         'unverified_email', // e-mail da conta Google não verificado
         'account_conflict', // e-mail já ligado a outra conta Google
-        'no_account',       // conta inexistente e cadastro público fechado
+        'no_account',       // "Entrar com Google" sem conta cadastrada (nunca cria conta)
+        'registration_closed', // "Cadastrar com Google" com o cadastro público fechado
         'failed',           // qualquer outra falha (Google fora, rede...)
     ];
 
