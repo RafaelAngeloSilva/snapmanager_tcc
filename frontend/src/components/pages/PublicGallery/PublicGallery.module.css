@@ -91,15 +91,6 @@
   padding: 2.5rem 1.5rem 6rem;
 }
 
-.loadingBox {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.6rem;
-  padding: 4rem 0;
-  color: var(--color-text-secondary);
-}
-
 .noticeBox {
   background: var(--color-warning-bg);
   border: 1px solid var(--color-warning-border);

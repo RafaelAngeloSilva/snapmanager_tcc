@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Modal from '../../atoms/Modal';
 import Button from '../../atoms/Button';
 import Spinner from '../../atoms/Spinner';
+import CircularLoader from '../../atoms/CircularLoader';
 import Badge from '../../atoms/Badge';
 import EmptyState from '../../atoms/EmptyState';
 import ImageThumb from '../../atoms/ImageThumb';
@@ -10,6 +11,7 @@ import WhatsAppShareButton from '../../molecules/WhatsAppShareButton';
 import { UploadIcon } from '../../atoms/Icon';
 import GalleryImagesGrid from '../GalleryImagesGrid';
 import GalleryUploadModal from '../GalleryUploadModal';
+import { useFileDrop, usePreventFileDropNavigation } from '../../../hooks/useFileDrop';
 import { fetchGallery, deleteGalleryImage, uploadGalleryWatermarkImage } from '../../../api/galleries';
 import { formatDateTime } from '../../../utils/formatters';
 import {
@@ -33,6 +35,9 @@ export default function GalleryDetailsModal({ isOpen, galleryId, onClose, onEdit
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [isUploadOpen, setIsUploadOpen] = useState(false);
+  // Fotos arrastadas do computador direto para a área "Fotos": abrem o
+  // envio já com elas selecionadas (mesmas validações e mesmo fluxo).
+  const [droppedFiles, setDroppedFiles] = useState(null);
   const [isWatermarkUploading, setIsWatermarkUploading] = useState(false);
   const [watermarkError, setWatermarkError] = useState('');
   const watermarkInputRef = useRef(null);
@@ -62,7 +67,7 @@ export default function GalleryDetailsModal({ isOpen, galleryId, onClose, onEdit
   // `keepOpen`: parte das fotos foi enviada e parte falhou — atualiza a grade
   // mas deixa o modal de upload aberto com as que faltam.
   function handleUploaded({ keepOpen = false } = {}) {
-    if (!keepOpen) setIsUploadOpen(false);
+    if (!keepOpen) closeUpload();
     load();
     onChanged?.();
   }
@@ -99,6 +104,20 @@ export default function GalleryDetailsModal({ isOpen, galleryId, onClose, onEdit
     }
   }
 
+  usePreventFileDropNavigation(isOpen);
+  const { isDragging: isDraggingPhotos, handlers: photoDropHandlers } = useFileDrop(
+    (files) => {
+      setDroppedFiles(Array.from(files));
+      setIsUploadOpen(true);
+    },
+    { disabled: isUploadOpen || !gallery },
+  );
+
+  function closeUpload() {
+    setIsUploadOpen(false);
+    setDroppedFiles(null);
+  }
+
   const publicUrl = gallery ? `${window.location.origin}/public/gallery/${gallery.access_token}` : '';
   const totalCount = gallery?.images?.length || 0;
   const selectedCount = gallery?.images?.filter((image) => image.is_selected).length || 0;
@@ -124,11 +143,7 @@ export default function GalleryDetailsModal({ isOpen, galleryId, onClose, onEdit
         </>
       }
     >
-      {isLoading && (
-        <div className={styles.loadingBox}>
-          <Spinner /> Carregando...
-        </div>
-      )}
+      {isLoading && <CircularLoader label="Carregando galeria…" />}
 
       {!isLoading && error && <EmptyState tone="error" title="Erro" message={error} />}
 
@@ -255,22 +270,36 @@ export default function GalleryDetailsModal({ isOpen, galleryId, onClose, onEdit
             </div>
           </div>
 
-          <div className={styles.sectionHeader}>
-            <p className={styles.sectionTitle}>Fotos</p>
-            <Button variant="secondary" onClick={() => setIsUploadOpen(true)}>
-              <UploadIcon />
-              Enviar fotos
-            </Button>
-          </div>
+          <section
+            className={`${styles.photosArea} ${isDraggingPhotos ? styles.photosAreaDragging : ''}`}
+            {...photoDropHandlers}
+            data-testid="gallery-photos-dropzone"
+          >
+            <div className={styles.sectionHeader}>
+              <p className={styles.sectionTitle}>Fotos</p>
+              <Button variant="secondary" onClick={() => setIsUploadOpen(true)}>
+                <UploadIcon />
+                Enviar fotos
+              </Button>
+            </div>
 
-          <GalleryImagesGrid images={gallery.images} onDelete={handleDeleteImage} />
+            <GalleryImagesGrid images={gallery.images} onDelete={handleDeleteImage} />
+
+            {isDraggingPhotos && (
+              <div className={styles.dropOverlay} aria-hidden="true">
+                <UploadIcon width={26} height={26} />
+                <span>Solte as fotos para enviar a esta galeria</span>
+              </div>
+            )}
+          </section>
         </>
       )}
 
       <GalleryUploadModal
         isOpen={isUploadOpen}
         gallery={gallery}
-        onClose={() => setIsUploadOpen(false)}
+        onClose={closeUpload}
+        initialFiles={droppedFiles}
         onUploaded={handleUploaded}
       />
     </Modal>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchGalleries } from '../../../api/galleries';
 import Card from '../../atoms/Card';
-import Spinner from '../../atoms/Spinner';
+import CircularLoader from '../../atoms/CircularLoader';
 import EmptyState from '../../atoms/EmptyState';
 import Button from '../../atoms/Button';
 import Pagination from '../../molecules/Pagination';
@@ -161,11 +161,7 @@ export default function Galleries() {
       {toast && <div className={styles.toast}>{toast}</div>}
 
       <Card padding="none">
-        {isLoading && (
-          <div className={styles.loadingBox}>
-            <Spinner /> Carregando galerias...
-          </div>
-        )}
+        {isLoading && <CircularLoader label="Carregando galerias…" />}
 
         {!isLoading && error && (
           <div className={styles.stateBox}>

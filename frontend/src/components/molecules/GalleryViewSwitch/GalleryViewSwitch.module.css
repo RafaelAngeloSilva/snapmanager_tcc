@@ -1,46 +1,95 @@
 /* Fica sobre a hero escura da galeria pública: cores fixas, como o
-   ThemeToggle variant="onDark" já faz nessa tela. */
+   ThemeToggle variant="onDark" já faz nessa tela.
+
+   Cada opção tem a largura do próprio nome, e uma "pílula" clara desliza
+   por trás da opção ativa (posição/largura medidas no componente). O texto da opção ativa é escuro sobre a
+   pílula clara (alto contraste) — inclusive depois de um toque no celular,
+   quando o navegador mantém o estado :hover no botão tocado. */
 .switch {
+  position: relative;
   display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  backdrop-filter: blur(6px);
+  max-width: 100%;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(8, 10, 16, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 10px 30px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 0;
+  width: 0;
+  opacity: 0;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  transition: transform 280ms cubic-bezier(0.2, 0.8, 0.2, 1), width 280ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .option {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 0.95rem;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.55rem 1.15rem;
   border: none;
-  border-radius: var(--radius-full);
+  border-radius: 999px;
   background: none;
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(255, 255, 255, 0.78);
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 600;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
   cursor: pointer;
-  transition: background-color 160ms ease, color 160ms ease;
+  transition: color 200ms ease;
 }
 
-.option:hover {
+.option:not(.optionActive):hover {
   color: #fff;
 }
 
 .option:focus-visible {
   outline: 2px solid #fff;
-  outline-offset: 2px;
+  outline-offset: 3px;
 }
 
-.optionActive {
-  background: #fff;
+/* Ativo: escuro sobre a pílula branca, com ou sem :hover. */
+.optionActive,
+.optionActive:hover {
   color: #14161f;
+  cursor: default;
+}
+
+.label {
+  line-height: 1.2;
+}
+
+@media (max-width: 480px) {
+  .option {
+    padding: 0.5rem 0.9rem;
+    font-size: 0.86rem;
+    gap: 0.4rem;
+  }
+}
+
+@media (max-width: 340px) {
+  .option {
+    padding: 0.5rem 0.65rem;
+    font-size: 0.8rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .thumb,
   .option {
     transition: none;
   }

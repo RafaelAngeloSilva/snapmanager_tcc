@@ -17,20 +17,91 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
-  padding: 2rem 1.5rem;
+  gap: 0.45rem;
+  padding: 2.1rem 1.5rem;
   border: 1.5px dashed var(--color-border-strong);
-  border-radius: var(--radius-md);
+  border-radius: 20px;
+  background: var(--color-surface-alt);
   color: var(--color-text-secondary);
-  font-size: 0.88rem;
   text-align: center;
   cursor: pointer;
-  transition: border-color var(--transition-fast), background-color var(--transition-fast);
+  transition: border-color var(--transition-fast), background-color var(--transition-fast),
+    box-shadow var(--transition-fast), transform var(--transition-fast);
 }
 
-.dropzone:hover {
+.dropIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 0.3rem;
+  border-radius: 999px;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
+  transition: transform var(--transition-fast);
+}
+
+.dropTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.dropHint {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.dropzone:hover,
+.hiddenInput:focus-visible + .dropzone {
   border-color: var(--color-primary);
   background: var(--color-primary-soft);
+}
+
+/* Celular/tablet (sem mouse): não há arrastar e soltar, só o seletor. */
+.touchOnly {
+  display: none;
+}
+
+@media (hover: none) and (pointer: coarse) {
+  .pointerOnly {
+    display: none;
+  }
+
+  .touchOnly {
+    display: inline;
+  }
+}
+
+/* Arquivos sendo arrastados sobre a área. */
+.dragging {
+  border-style: solid;
+  border-color: var(--color-primary);
+  background: var(--color-primary-soft);
+  box-shadow: 0 0 0 4px var(--color-primary-soft);
+  transform: scale(1.01);
+}
+
+.dragging .dropIcon {
+  transform: translateY(-3px) scale(1.08);
+}
+
+/* Envio em andamento: a área fica inativa. */
+.busy {
+  cursor: progress;
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* Algum arquivo foi recusado ou o envio falhou. */
+.hasError {
+  border-color: var(--color-danger-border);
+}
+
+.hasError .dropIcon {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
 }
 
 .warnings {

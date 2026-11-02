@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.9rem;
+  gap: 1rem;
   width: 100%;
   max-width: 30rem;
   margin: 0 auto;
@@ -64,15 +64,24 @@
 }
 
 .reviewLink {
-  border: none;
-  background: none;
-  padding: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface);
+  padding: 0.5rem 1rem;
   color: var(--color-primary);
   font: inherit;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  text-decoration: underline;
+  transition: background-color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.reviewLink:hover {
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary);
 }
 
 .reviewLink:focus-visible {

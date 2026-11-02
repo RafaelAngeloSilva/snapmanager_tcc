@@ -1,0 +1,83 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+  padding: 3rem 1rem;
+  width: 100%;
+  text-align: center;
+}
+
+.svg {
+  animation: rotate 1.4s linear infinite;
+}
+
+.track {
+  stroke: var(--color-border);
+}
+
+.arc {
+  stroke: var(--color-primary);
+  stroke-dasharray: 1, 150;
+  stroke-dashoffset: 0;
+  animation: dash 1.4s ease-in-out infinite;
+}
+
+.label {
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.onDark .track {
+  stroke: rgba(255, 255, 255, 0.14);
+}
+
+.onDark .label {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+@keyframes rotate {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* O arco cresce e encolhe enquanto gira (sem piscar nem pular). */
+@keyframes dash {
+  0% {
+    stroke-dasharray: 1, 150;
+    stroke-dashoffset: 0;
+  }
+
+  50% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -35;
+  }
+
+  100% {
+    stroke-dasharray: 90, 150;
+    stroke-dashoffset: -124;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .svg {
+    animation-duration: 2.4s;
+  }
+
+  .arc {
+    animation: none;
+    stroke-dasharray: 60, 150;
+  }
+}

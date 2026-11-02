@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Spinner from '../../atoms/Spinner';
+import CircularLoader from '../../atoms/CircularLoader';
 import EmptyState from '../../atoms/EmptyState';
 import Button from '../../atoms/Button';
 import ThemeToggle from '../../atoms/ThemeToggle';
@@ -145,11 +146,7 @@ export default function PublicGallery() {
       </header>
 
       <main className={styles.content}>
-        {isLoading && (
-          <div className={styles.loadingBox}>
-            <Spinner /> Carregando galeria...
-          </div>
-        )}
+        {isLoading && <CircularLoader label="Carregando galeria…" size={48} />}
 
         {!isLoading && notFound && (
           <EmptyState

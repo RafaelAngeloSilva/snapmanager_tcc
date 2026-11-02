@@ -1,12 +1,3 @@
-.loadingBox {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 1rem 0;
-  color: var(--color-text-secondary);
-  font-size: 0.9rem;
-}
-
 .header {
   display: flex;
   align-items: center;
@@ -230,4 +221,33 @@
   .linkActions {
     width: 100%;
   }
+}
+
+/* Área "Fotos": aceita fotos arrastadas do computador. */
+.photosArea {
+  position: relative;
+  border-radius: 18px;
+}
+
+.photosAreaDragging {
+  outline: 2px dashed var(--color-primary);
+  outline-offset: 6px;
+}
+
+.dropOverlay {
+  position: absolute;
+  inset: -6px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--color-surface) 82%, transparent);
+  backdrop-filter: blur(2px);
+  color: var(--color-primary);
+  font-size: 0.95rem;
+  font-weight: 600;
+  pointer-events: none;
 }

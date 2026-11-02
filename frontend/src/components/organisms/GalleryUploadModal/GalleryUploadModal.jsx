@@ -4,6 +4,7 @@ import Button from '../../atoms/Button';
 import Spinner from '../../atoms/Spinner';
 import { UploadIcon, TrashIcon } from '../../atoms/Icon';
 import { uploadGalleryImages } from '../../../api/galleries';
+import { useFileDrop, usePreventFileDropNavigation } from '../../../hooks/useFileDrop';
 import styles from './GalleryUploadModal.module.css';
 
 const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -31,7 +32,7 @@ function formatSize(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function GalleryUploadModal({ isOpen, gallery, onClose, onUploaded }) {
+export default function GalleryUploadModal({ isOpen, gallery, onClose, onUploaded, initialFiles = null }) {
   const [pending, setPending] = useState([]);
   const [previews, setPreviews] = useState({});
   const [isUploading, setIsUploading] = useState(false);
@@ -51,6 +52,9 @@ export default function GalleryUploadModal({ isOpen, gallery, onClose, onUploade
     }
   }, [isOpen]);
 
+  // Com o modal aberto, um arquivo solto FORA da área não abre a foto no navegador.
+  usePreventFileDropNavigation(isOpen);
+
   useEffect(() => {
     const nextPreviews = {};
     pending.forEach((file, index) => {
@@ -63,9 +67,10 @@ export default function GalleryUploadModal({ isOpen, gallery, onClose, onUploade
     };
   }, [pending]);
 
-  function handleFilesSelected(event) {
-    const files = Array.from(event.target.files || []);
-    event.target.value = '';
+  // Mesmas validações para o clique e para o arrastar e soltar.
+  function addFiles(fileList) {
+    const files = Array.from(fileList || []);
+    if (files.length === 0) return;
 
     const accepted = [];
     const warnings = [];
@@ -83,6 +88,19 @@ export default function GalleryUploadModal({ isOpen, gallery, onClose, onUploade
     setLocalWarnings(warnings);
     setPending((prev) => [...prev, ...accepted]);
   }
+
+  function handleFilesSelected(event) {
+    addFiles(event.target.files);
+    event.target.value = '';
+  }
+
+  const { isDragging, handlers: dropHandlers } = useFileDrop(addFiles, { disabled: isUploading });
+
+  // Fotos soltas na área da galeria (modal de detalhes) chegam já selecionadas.
+  useEffect(() => {
+    if (isOpen && initialFiles?.length) addFiles(initialFiles);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, initialFiles]);
 
   function handleRemove(index) {
     setPending((prev) => prev.filter((_, i) => i !== index));
@@ -180,13 +198,41 @@ export default function GalleryUploadModal({ isOpen, gallery, onClose, onUploade
           accept="image/jpeg,image/png,image/webp"
           multiple
           onChange={handleFilesSelected}
+          disabled={isUploading}
           className={styles.hiddenInput}
           id="gallery-upload-input"
         />
 
-        <label htmlFor="gallery-upload-input" className={styles.dropzone}>
-          <UploadIcon width={24} height={24} />
-          <span>Clique para selecionar fotos (jpg, png ou webp — até 10MB cada)</span>
+        <label
+          htmlFor="gallery-upload-input"
+          className={[
+            styles.dropzone,
+            isDragging ? styles.dragging : '',
+            isUploading ? styles.busy : '',
+            !isDragging && (error || localWarnings.length > 0) ? styles.hasError : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          {...dropHandlers}
+          aria-disabled={isUploading || undefined}
+          data-testid="gallery-dropzone"
+        >
+          <span className={styles.dropIcon} aria-hidden="true">
+            <UploadIcon width={24} height={24} />
+          </span>
+          <span className={styles.dropTitle}>
+            {isDragging
+              ? 'Solte as fotos para adicionar'
+              : isUploading
+                ? 'Enviando fotos…'
+                : (
+                  <>
+                    <span className={styles.pointerOnly}>Arraste as fotos aqui ou clique para selecionar</span>
+                    <span className={styles.touchOnly}>Toque para selecionar as fotos</span>
+                  </>
+                )}
+          </span>
+          <span className={styles.dropHint}>JPG, PNG ou WEBP · até 10MB cada · várias de uma vez</span>
         </label>
 
         {localWarnings.length > 0 && (

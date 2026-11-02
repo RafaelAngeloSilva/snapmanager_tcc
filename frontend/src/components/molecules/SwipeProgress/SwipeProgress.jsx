@@ -9,6 +9,10 @@ import styles from './SwipeProgress.module.css';
 export default function SwipeProgress({ position, total, evaluated, selected, limit = null }) {
   const remaining = Math.max(0, total - evaluated);
   const percent = total === 0 ? 0 : Math.round((evaluated / total) * 100);
+  const selectedLabel = limit
+    ? `${selected} de ${limit} ${limit === 1 ? 'foto selecionada' : 'fotos selecionadas'}`
+    : `${selected} ${selected === 1 ? 'selecionada' : 'selecionadas'}`;
+  const remainingLabel = remaining === 0 ? 'Todas avaliadas' : `${remaining} ${remaining === 1 ? 'restante' : 'restantes'} para avaliar`;
 
   return (
     <div className={styles.progress}>
@@ -16,9 +20,10 @@ export default function SwipeProgress({ position, total, evaluated, selected, li
         <span className={styles.position}>{position ? `Foto ${position} de ${total}` : `${total} fotos`}</span>
         <span className={styles.counts}>
           <strong className={styles.selected}>
-            {limit ? `${selected} de ${limit} fotos selecionadas` : `${selected} selecionadas`}
+            <span className={styles.dot} aria-hidden="true" />
+            {selectedLabel}
           </strong>
-          <span className={styles.remaining}>{remaining} restantes para avaliar</span>
+          <span className={styles.remaining}>{remainingLabel}</span>
         </span>
       </div>
 
