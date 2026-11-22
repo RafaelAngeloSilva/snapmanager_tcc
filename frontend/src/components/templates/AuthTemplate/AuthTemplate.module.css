@@ -39,6 +39,38 @@
     radial-gradient(circle at 50% 45%, transparent 0%, rgba(8, 9, 14, 0.4) 100%);
 }
 
+/* Pausar/reproduzir o vídeo de fundo: discreto, no canto inferior
+   esquerdo, dentro das marcas do visor. */
+.videoToggle {
+  position: absolute;
+  left: 3.25rem;
+  bottom: 3.25rem;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(241, 239, 233, 0.22);
+  background: rgba(8, 9, 14, 0.45);
+  color: rgba(241, 239, 233, 0.8);
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition: background-color var(--transition-fast), color var(--transition-fast), border-color var(--transition-fast);
+}
+
+.videoToggle:hover {
+  background: rgba(8, 9, 14, 0.7);
+  color: #fff;
+  border-color: rgba(241, 239, 233, 0.45);
+}
+
+.videoToggle:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
 /* Cantos de enquadramento, como as marcas de um visor de câmera. */
 .viewfinder {
   position: absolute;
